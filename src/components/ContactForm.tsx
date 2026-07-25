@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { contactDetails } from "@/data/contact";
 
 const interests = [
@@ -14,35 +14,68 @@ const interests = [
   "Not sure yet",
 ];
 
+function buildMailto(form: HTMLFormElement) {
+  const data = new FormData(form);
+  const name = String(data.get("name") || "").trim();
+  const email = String(data.get("email") || "").trim();
+  const company = String(data.get("company") || "").trim();
+  const message = String(data.get("message") || "").trim();
+  const selectedInterests = data
+    .getAll("interest")
+    .map(String)
+    .filter(Boolean);
+
+  const subject = name
+    ? `Teqnowebs inquiry from ${name}`
+    : "Teqnowebs inquiry";
+
+  const body = [
+    `Name: ${name}`,
+    `Email: ${email}`,
+    company ? `Company: ${company}` : null,
+    selectedInterests.length
+      ? `Interested in: ${selectedInterests.join(", ")}`
+      : null,
+    "",
+    "Project details:",
+    message,
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
+
+  return `mailto:${contactDetails.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 export function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
+
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const mailto = buildMailto(e.currentTarget);
+    window.location.href = mailto;
+    setSubmitted(true);
+  }
 
   if (submitted) {
     return (
       <div className="border border-accent/30 bg-accent/5 p-8 sm:p-10">
-        <h2 className="font-display text-2xl font-semibold text-ink">Thanks — we got it.</h2>
+        <h2 className="font-display text-2xl font-semibold text-ink">Thanks — open your email to send.</h2>
         <p className="mt-3 text-muted">
-          A Teqnowebs teammate will reply shortly. For faster replies, email{" "}
+          Your message is addressed to{" "}
           <a
             href={`mailto:${contactDetails.email}`}
             className="font-semibold text-accent-deep"
           >
             {contactDetails.email}
           </a>
-          .
+          . If your mail app did not open, tap that address to write us directly.
         </p>
       </div>
     );
   }
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        setSubmitted(true);
-      }}
-      className="space-y-6"
-    >
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid gap-6 sm:grid-cols-2">
         <label className="block">
           <span className="text-sm font-medium text-ink">Name</span>
@@ -102,6 +135,16 @@ export function ContactForm() {
       >
         Send message
       </button>
+      <p className="text-xs text-muted">
+        Sends via your email app to{" "}
+        <a
+          href={`mailto:${contactDetails.email}`}
+          className="font-medium text-accent-deep hover:underline"
+        >
+          {contactDetails.email}
+        </a>
+        .
+      </p>
     </form>
   );
 }

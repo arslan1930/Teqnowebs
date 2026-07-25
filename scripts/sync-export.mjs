@@ -15,11 +15,18 @@ const targets = [
   "404.html",
   "404",
   "about",
+  "blog",
   "contact",
   "services",
   "software",
   "_next",
   ".htaccess",
+  "logo.svg",
+  "icon.svg",
+  "favicon.ico",
+  "favicon-32x32.png",
+  "apple-touch-icon.png",
+  "team",
 ];
 
 for (const name of targets) {

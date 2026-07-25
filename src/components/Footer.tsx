@@ -17,6 +17,7 @@ const softwareLinks = [
 ];
 
 const companyLinks = [
+  { href: "/blog", label: "Blog" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/contact", label: "Get a quote" },
