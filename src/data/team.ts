@@ -23,6 +23,7 @@ export function memberInitials(name: string): string {
   return initials(name);
 }
 
+/** Full Teqnowebs roster shown on /about */
 export const teamGroups: TeamGroup[] = [
   {
     id: "leadership-tech",
@@ -54,3 +55,5 @@ export const teamGroups: TeamGroup[] = [
     ],
   },
 ];
+
+export const teamMembers: TeamMember[] = teamGroups.flatMap((group) => group.members);
