@@ -1,5 +1,4 @@
 export const contactDetails = {
-  name: "M Arslan",
   email: "Support@teqnowebs.com",
   phone: "+447445152374",
   phoneHref: "tel:+447445152374",

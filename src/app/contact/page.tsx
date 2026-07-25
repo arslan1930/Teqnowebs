@@ -25,10 +25,6 @@ export default function ContactPage() {
             </p>
             <dl className="mt-10 space-y-4 text-sm">
               <div>
-                <dt className="font-semibold text-ink">Contact</dt>
-                <dd className="text-muted">{contactDetails.name}</dd>
-              </div>
-              <div>
                 <dt className="font-semibold text-ink">Email</dt>
                 <dd>
                   <a
