@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ContactForm } from "@/components/ContactForm";
+import { contactDetails } from "@/data/contact";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -25,35 +26,50 @@ export default function ContactPage() {
             <dl className="mt-10 space-y-4 text-sm">
               <div>
                 <dt className="font-semibold text-ink">Contact</dt>
-                <dd className="text-muted">M Arslan</dd>
-              </div>
-              <div>
-                <dt className="font-semibold text-ink">LinkedIn</dt>
-                <dd>
-                  <a
-                    href="https://www.linkedin.com/in/m-arslan-8a8385167/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-accent-deep hover:underline"
-                  >
-                    linkedin.com/in/m-arslan-8a8385167
-                  </a>
-                </dd>
+                <dd className="text-muted">{contactDetails.name}</dd>
               </div>
               <div>
                 <dt className="font-semibold text-ink">Email</dt>
                 <dd>
                   <a
-                    href="mailto:hello@teqnowebs.com"
+                    href={`mailto:${contactDetails.email}`}
                     className="text-accent-deep hover:underline"
                   >
-                    hello@teqnowebs.com
+                    {contactDetails.email}
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-ink">Phone</dt>
+                <dd>
+                  <a
+                    href={contactDetails.phoneHref}
+                    className="text-accent-deep hover:underline"
+                  >
+                    {contactDetails.phone}
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-ink">Address</dt>
+                <dd className="text-muted">{contactDetails.address}</dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-ink">LinkedIn</dt>
+                <dd>
+                  <a
+                    href={contactDetails.linkedIn.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent-deep hover:underline"
+                  >
+                    {contactDetails.linkedIn.label}
                   </a>
                 </dd>
               </div>
               <div>
                 <dt className="font-semibold text-ink">Typical reply</dt>
-                <dd className="text-muted">Within 1 business day</dd>
+                <dd className="text-muted">{contactDetails.replyTime}</dd>
               </div>
             </dl>
           </div>
