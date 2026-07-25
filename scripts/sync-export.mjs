@@ -15,6 +15,7 @@ const targets = [
   "404.html",
   "404",
   "about",
+  "blog",
   "contact",
   "services",
   "software",

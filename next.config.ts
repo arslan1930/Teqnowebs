@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
   basePath: "/Teqnowebs",
   images: {
     unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "cdn.sanity.io",
+      },
+    ],
   },
   webpack: (config) => {
     config.watchOptions = {

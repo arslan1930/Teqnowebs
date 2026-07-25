@@ -61,6 +61,7 @@ export default function HomePage() {
               <Logo
                 href="/"
                 ariaLabel="Teqnowebs"
+                variant="wordmark"
                 sizeClassName="text-5xl sm:text-6xl md:text-7xl"
               />
             </div>
