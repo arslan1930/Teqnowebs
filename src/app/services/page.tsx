@@ -3,48 +3,76 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Services",
-  description: "Web development, graphic design, SEO, and link building from Teqnowebs.",
+  description:
+    "Website development, UI/UX design, graphic design, SEO, and link building from Teqnowebs.",
 };
 
 const services = [
   {
     id: "web",
     n: "01",
-    title: "Web development",
-    body: "Sites that represent your brand and turn visitors into customers.",
+    title: "Website development",
+    body: "Sites that represent your brand, load fast, and turn visitors into customers.",
     items: [
-      "Business websites and marketing pages",
-      "E-commerce and product catalogs",
+      "Business websites and company sites",
+      "Marketing and conversion landing pages",
+      "E-commerce stores and product catalogs",
       "CMS setup and content workflows",
-      "Performance, accessibility, and ongoing care",
+      "Responsive builds for mobile and desktop",
+      "Performance, accessibility, and security basics",
+      "Hosting handoff and ongoing maintenance",
+      "Integrations for forms, CRM, and analytics",
     ],
     bg: "bg-paper",
   },
   {
-    id: "design",
+    id: "uiux",
     n: "02",
-    title: "Graphic design",
-    body: "Visual systems that feel owned — logos, brand kits, and campaign creatives.",
+    title: "UI / UX design",
+    body: "Interfaces people understand quickly — researched, wired, and built to convert.",
     items: [
-      "Logo and brand identity",
-      "Social and campaign creatives",
-      "UI / UX for web and software",
-      "Print and presentation design",
+      "User research and journey mapping",
+      "Information architecture and flows",
+      "Wireframes for key screens",
+      "Interactive prototypes for stakeholder review",
+      "UI kits and design systems",
+      "Usability reviews and iteration",
+      "Conversion-focused UX for marketing sites",
+      "Product UX for custom software dashboards",
     ],
     bg: "bg-mist/30",
   },
   {
-    id: "seo",
+    id: "design",
     n: "03",
+    title: "Graphic design",
+    body: "Visual systems that feel owned — logos, brand kits, and campaign creatives.",
+    items: [
+      "Logo and brand identity",
+      "Brand guidelines and visual kits",
+      "Social and campaign creatives",
+      "Presentation and pitch decks",
+      "Print and collateral design",
+      "Ad creatives for paid campaigns",
+    ],
+    bg: "bg-paper",
+  },
+  {
+    id: "seo",
+    n: "04",
     title: "SEO & link building",
     body: "Technical foundations, content that ranks, and links that build authority.",
     items: [
-      "Technical and on-page SEO audits",
-      "Keyword and content strategy",
+      "Technical SEO audits and fixes",
+      "On-page SEO and content structure",
+      "Keyword research and content strategy",
       "Local SEO for service businesses",
       "Ethical link building and outreach",
+      "Competitor and SERP analysis",
+      "Site migrations and SEO hygiene",
+      "Rankings, traffic, and reporting dashboards",
     ],
-    bg: "bg-paper",
+    bg: "bg-mist/30",
   },
 ];
 
@@ -58,17 +86,18 @@ export default function ServicesPage() {
             Services
           </p>
           <h1 className="font-display mt-3 max-w-3xl text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
-            Everything your brand needs online — and the growth engine behind it.
+            Websites, UI/UX, design, and SEO — built to grow together.
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-muted">
-            Web, design, SEO, and link building under one roof. Pair them with our{" "}
+            Full website delivery, interface design, brand creatives, and search growth under one
+            roof. Pair them with our{" "}
             <Link
               href="/software"
               className="font-semibold text-accent-deep underline-offset-2 hover:underline"
             >
               custom software
             </Link>{" "}
-            when your operations need more than a website.
+            when sales, finance, and operations need more than a website.
           </p>
         </div>
       </section>
@@ -101,7 +130,7 @@ export default function ServicesPage() {
 
       <section className="band-soft border-y border-line py-16 text-center text-ink sm:py-20">
         <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
-          Need software too — sales, invoices, warehouse?
+          Need software too — sales manager, finance, warehouse?
         </h2>
         <Link
           href="/software"

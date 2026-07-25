@@ -4,39 +4,62 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Software",
   description:
-    "Custom sales, invoicing, warehouse, and order tracking software from Teqnowebs.",
+    "Custom sales manager/CRM, finance management, invoicing, warehouse, and order tracking software from Teqnowebs.",
 };
 
 const modules = [
   {
     id: "sales",
     n: "01",
-    title: "Sales systems",
-    body: "Track leads, quotes, and deals without losing follow-ups in chat threads.",
+    title: "Sales manager / CRM",
+    body: "Run the pipeline from first lead to closed deal — with clear owners, follow-ups, and targets.",
     items: [
-      "Lead and pipeline management",
-      "Quotes and proposals",
-      "Team assignment and reminders",
-      "Reporting that matches how you sell",
+      "Lead capture and pipeline stages",
+      "Contact and company records",
+      "Quotes, proposals, and deal value",
+      "Task reminders and follow-up cadences",
+      "Team assignment and ownership",
+      "Targets, forecasts, and sales reporting",
+      "Notes and activity history per deal",
+      "Handoff into invoicing when you win",
     ],
     bg: "bg-paper",
   },
   {
-    id: "invoicing",
+    id: "finance",
     n: "02",
+    title: "Finance management",
+    body: "Keep money visible — expenses, cashflow, and reports your finance team can trust.",
+    items: [
+      "Income and expense tracking",
+      "Cashflow visibility by period",
+      "Charts of accounts tailored to you",
+      "Category budgets and alerts",
+      "Vendor and payer records",
+      "Export-ready financial reports",
+      "Role-based access for owners and finance",
+      "Works alongside invoicing and sales",
+    ],
+    bg: "bg-mist/30",
+  },
+  {
+    id: "invoicing",
+    n: "03",
     title: "Invoicing",
     body: "Send professional invoices and keep payment status clear for finance and clients.",
     items: [
       "Invoice creation and numbering",
       "Payment status and reminders",
       "Tax-ready records",
-      "Client history in one view",
+      "Partial payments and balances",
+      "Client billing history in one view",
+      "PDF and shareable invoice links",
     ],
-    bg: "bg-mist/30",
+    bg: "bg-paper",
   },
   {
     id: "warehouse",
-    n: "03",
+    n: "04",
     title: "Warehouse & collection",
     body: "Know what you have, where it is, and what is ready for pickup or dispatch.",
     items: [
@@ -44,12 +67,14 @@ const modules = [
       "Collection and receiving workflows",
       "Low-stock alerts",
       "Simple ops dashboards for the floor",
+      "SKU and batch tracking basics",
+      "Handoff into order fulfillment",
     ],
-    bg: "bg-paper",
+    bg: "bg-mist/30",
   },
   {
     id: "tracking",
-    n: "04",
+    n: "05",
     title: "Order tracking",
     body: "Give your team — and your customers — a live path from order to delivery.",
     items: [
@@ -57,8 +82,10 @@ const modules = [
       "Customer-facing tracking links",
       "Internal handoff between teams",
       "Exceptions and delay alerts",
+      "Delivery and collection confirmation",
+      "Reporting on fulfillment speed",
     ],
-    bg: "bg-mist/30",
+    bg: "bg-paper",
   },
 ];
 
@@ -72,11 +99,11 @@ export default function SoftwarePage() {
             Software
           </p>
           <h1 className="font-display mt-3 max-w-3xl text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
-            Business systems for the work behind the website.
+            Sales, finance, and ops systems for the work behind the website.
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-muted">
-            We build and connect sales, invoicing, warehouse, and order tracking so operations stay
-            in sync — tailored to how your company actually works.
+            We build sales manager/CRM, finance management, invoicing, warehouse, and order tracking
+            so your teams stay in sync — tailored to how your company actually works.
           </p>
         </div>
       </section>

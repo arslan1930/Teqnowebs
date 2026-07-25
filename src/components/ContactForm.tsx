@@ -4,10 +4,12 @@ import { useState, type FormEvent } from "react";
 import { contactDetails } from "@/data/contact";
 
 const interests = [
-  "Web development",
+  "Website development",
+  "UI / UX design",
   "Graphic design",
   "SEO & link building",
-  "Sales software",
+  "Sales manager / CRM",
+  "Finance management",
   "Invoicing",
   "Warehouse / collection",
   "Order tracking",

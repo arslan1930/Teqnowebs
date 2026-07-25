@@ -4,15 +4,15 @@ import { Logo } from "@/components/Logo";
 const pillars = [
   {
     n: "01",
-    title: "Web development",
+    title: "Website development",
     body: "Business sites, stores, and landing pages that load fast and convert.",
     href: "/services#web",
   },
   {
     n: "02",
-    title: "Graphic design",
-    body: "Brand identity, creatives, and UI that look intentional — not templated.",
-    href: "/services#design",
+    title: "UI / UX design",
+    body: "Research, wireframes, and interfaces built for clarity and conversion.",
+    href: "/services#uiux",
   },
   {
     n: "03",
@@ -22,14 +22,29 @@ const pillars = [
   },
   {
     n: "04",
+    title: "Graphic design",
+    body: "Brand identity and creatives that look intentional — not templated.",
+    href: "/services#design",
+  },
+  {
+    n: "05",
     title: "Custom software",
-    body: "Sales, invoicing, warehouse, and order tracking built around your workflow.",
+    body: "Sales manager, finance, invoicing, warehouse, and order tracking.",
     href: "/software",
   },
 ];
 
 const software = [
-  { href: "/software#sales", title: "Sales", body: "Pipeline, quotes, and follow-ups in one place." },
+  {
+    href: "/software#sales",
+    title: "Sales manager",
+    body: "CRM pipeline, leads, follow-ups, and team targets.",
+  },
+  {
+    href: "/software#finance",
+    title: "Finance",
+    body: "Expenses, cashflow, and reports finance can trust.",
+  },
   { href: "/software#invoicing", title: "Invoicing", body: "Clean invoices, payments, and records." },
   {
     href: "/software#warehouse",
@@ -70,7 +85,7 @@ export default function HomePage() {
               Web, design, growth, and software that run your business.
             </h1>
             <p className="animate-rise-delay-2 mt-5 max-w-md text-base leading-relaxed text-muted sm:text-lg">
-              From your website and brand to SEO, invoicing, and order tracking — Teqnowebs builds
+              From websites, UI/UX, and SEO to sales, finance, and order tracking — Teqnowebs builds
               what customers see and what your team uses every day.
             </p>
             <div className="animate-rise-delay-3 mt-8 flex flex-wrap items-center gap-3">
@@ -172,9 +187,9 @@ export default function HomePage() {
             What we do
           </p>
           <h2 className="font-display mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-            Four pillars. One agency for the full stack of growth.
+            One agency for websites, design, growth, and systems.
           </h2>
-          <div className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {pillars.map((item) => (
               <Link key={item.title} href={item.href} className="group block">
                 <span className="font-display text-xs text-muted">{item.n}</span>
@@ -197,12 +212,12 @@ export default function HomePage() {
             Business systems
           </p>
           <h2 className="font-display mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-            Software for sales, money, stock, and delivery.
+            Software for sales, finance, stock, and delivery.
           </h2>
           <p className="mt-4 max-w-xl text-muted">
             Custom modules that connect — so you stop stitching spreadsheets together.
           </p>
-          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {software.map((item) => (
               <Link
                 key={item.title}
@@ -244,8 +259,8 @@ export default function HomePage() {
             Ready when your next site, brand, or system is.
           </h2>
           <p className="mt-4 max-w-lg text-muted">
-            Tell us what you need — a new website, SEO push, or warehouse-to-invoice software. We
-            will map the path.
+            Tell us what you need — a new website, UI/UX, SEO push, or sales and finance software.
+            We will map the path.
           </p>
           <Link
             href="/contact"
