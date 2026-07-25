@@ -1,16 +1,11 @@
-# Hostinger / LiteSpeed — serve static HTML at domain root (public_html)
+# Hostinger / LiteSpeed — site lives at /Teqnowebs (public_html/Teqnowebs)
 DirectoryIndex index.html index.htm
 
-# Prevent directory listing; follow symlinks for Hostinger layouts
 Options -Indexes +FollowSymLinks
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /
-
-  # If the site was uploaded under /Teqnowebs (or similar), send visitors to root HTML
-  RewriteRule ^[Tt]eqno+webs/?$ / [R=301,L]
-  RewriteRule ^[Tt]eqno+webs/(.*)$ /$1 [R=301,L]
+  RewriteBase /Teqnowebs/
 
   # Serve existing files and folders as-is
   RewriteCond %{REQUEST_FILENAME} -f [OR]
@@ -31,12 +26,10 @@ Options -Indexes +FollowSymLinks
   RewriteRule ^ 404.html [L]
 </IfModule>
 
-# Correct MIME types
 AddType text/css .css
 AddType application/javascript .js
 AddType font/woff2 .woff2
 
-# Security headers (safe for static sites)
 <IfModule mod_headers.c>
   Header set X-Content-Type-Options "nosniff"
 </IfModule>
