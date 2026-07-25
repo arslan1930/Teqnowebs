@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { contactDetails } from "@/data/contact";
 
 const interests = [
   "Web development",
@@ -22,8 +23,11 @@ export function ContactForm() {
         <h2 className="font-display text-2xl font-semibold text-ink">Thanks — we got it.</h2>
         <p className="mt-3 text-muted">
           A Teqnowebs teammate will reply shortly. For faster replies, email{" "}
-          <a href="mailto:hello@teqnowebs.com" className="font-semibold text-accent-deep">
-            hello@teqnowebs.com
+          <a
+            href={`mailto:${contactDetails.email}`}
+            className="font-semibold text-accent-deep"
+          >
+            {contactDetails.email}
           </a>
           .
         </p>
