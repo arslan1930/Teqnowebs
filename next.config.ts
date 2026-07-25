@@ -3,8 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
-  // Serve at domain root (public_html). Do not set basePath — that caused
-  // /Teqnowebs/Teqnowebs/... when files already lived under a Teqnowebs folder.
+  // Hostinger folder: public_html/Teqnowebs → https://domain/Teqnowebs/
+  // Upload build CONTENTS into that folder (do not nest another Teqnowebs/).
+  basePath: "/Teqnowebs",
   images: {
     unoptimized: true,
     remotePatterns: [

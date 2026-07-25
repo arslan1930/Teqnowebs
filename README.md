@@ -11,12 +11,12 @@ export PATH="$(pwd)/.tools/node/bin:$PATH"
 npm install
 cp .env.example .env.local   # then set your Sanity project ID
 npm run build
-npm run start -- -H 127.0.0.1 -p 3000
+npx serve@latest out -l 3000
 ```
 
 Or for development: `npm run dev` (keep large toolchains outside the repo to avoid file-watcher limits).
 
-Open http://127.0.0.1:3000/ (site is served at the **domain root** — no `/Teqnowebs` path prefix).
+Open http://127.0.0.1:3000/Teqnowebs/ (production `basePath` is `/Teqnowebs`).
 
 Without Sanity env vars, the site still builds and shows a sample blog post.
 
@@ -25,8 +25,8 @@ Without Sanity env vars, the site still builds and shows a sample blog post.
 | Route | Content |
 | --- | --- |
 | `/` | Brand-first home + service pillars + software spotlight |
-| `/services` | Web, graphic design, SEO & link building |
-| `/software` | Sales, invoicing, warehouse, order tracking |
+| `/services` | Websites, UI/UX, graphic design, SEO & link building |
+| `/software` | Sales manager/CRM, finance, invoicing, warehouse, order tracking |
 | `/blog` | Blog index (Sanity posts at build time) |
 | `/blog/[slug]` | Blog post |
 | `/about` | Agency story + team |
@@ -36,7 +36,7 @@ Without Sanity env vars, the site still builds and shows a sample blog post.
 
 - `npm run dev` — development server
 - `npm run build` — production static export + sync to repo root
-- `npm start` — serve production build
+- `npm start` — not used with static export; use `npx serve out` instead
 - `npm run sanity` — local Sanity Studio (blog posts + team member photos)
 - `npm run sanity:deploy` — host Studio on `*.sanity.studio`
 
@@ -54,34 +54,24 @@ Blog posts and **team member photos** are managed in **Sanity Studio** (not on H
 3. Run `npm run sanity` and sign in.
 4. Optionally deploy Studio: `npm run sanity:deploy` → manage content at your `*.sanity.studio` URL.
 
-### Blog posts
-
-Create a **Blog Post** with title, slug, excerpt, featured image + alt, body, `publishedAt`, and `published: true`.
-
-### Team photos (avatars)
-
-1. In Sanity Studio, open **Team Member**.
-2. Create one document per person: **Name**, **Role**, **Photo** (upload/replace headshot), **Team group**, **Order**.
-3. Toggle **Show on site** off to hide someone without deleting them.
-4. Until a photo is uploaded, the About page shows initials in the avatar.
-
-Without Sanity team documents yet, the site uses the roster in `src/data/team.ts` and optional files in `public/team/` (see that folder’s README).
-
 ### Publish workflow
 
 1. Add, edit, or delete posts / team photos in Sanity Studio.
 2. Run `npm run build` so Next.js fetches content and regenerates static HTML.
-3. Upload the fresh build into Hostinger `public_html/` (see below).
-
-Live updates without a rebuild are out of scope for this static Hostinger setup.
+3. Upload the fresh build into Hostinger (see below).
 
 ## Hostinger deploy
 
-Serve the site at the **domain root** (`public_html`) — not under a nested `/Teqnowebs` folder (that caused URLs like `/Teqnowebs/Teqnowebs/`).
+Serve the site at **`/Teqnowebs`** (`public_html/Teqnowebs`).
 
-1. Run `npm run build` (writes `index.html`, route folders including `blog/`, `_next/`, and `.htaccess` to the repo root / `out/`).
-2. In Hostinger → Domains → your domain → **Document root** = `public_html`.
-3. Upload the built site files **directly into** `public_html/` (`index.html`, `about/`, `blog/`, `contact/`, `services/`, `software/`, `_next/`, `404.html`, `.htaccess`, favicons, `logo.svg`, `team/`).
-4. If an old `public_html/Teqnowebs/` folder exists, delete it after uploading to root (`.htaccess` also 301-redirects `/Teqnowebs/...` → `/...`).
+1. Run `npm run build`.
+2. Document root stays `public_html`.
+3. Upload build files **directly into** `public_html/Teqnowebs/` so you see:
+   - `public_html/Teqnowebs/index.html`
+   - `public_html/Teqnowebs/contact/`
+   - `public_html/Teqnowebs/_next/`
+   - `public_html/Teqnowebs/.htaccess`
+4. **Do not** nest another folder: `public_html/Teqnowebs/Teqnowebs/` causes `/Teqnowebs/Teqnowebs/` URLs and breaks the contact page.
+5. Remove any outdated copy of the site sitting in `public_html/` root that still points assets at `/Teqnowebs/_next` while pages load from `/contact/` (that mismatch causes a client-side error).
 
-Visitors open `https://your-domain/` and `https://your-domain/about/`.
+Visitors open `https://your-domain/Teqnowebs/` and `https://your-domain/Teqnowebs/contact/`.

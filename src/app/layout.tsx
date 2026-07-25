@@ -23,11 +23,11 @@ export const metadata: Metadata = {
     "Teqnowebs builds websites, UI/UX, graphic design, SEO, link building, and custom software for sales, finance, invoicing, warehouse, and order tracking.",
   icons: {
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/Teqnowebs/icon.svg", type: "image/svg+xml" },
+      { url: "/Teqnowebs/favicon-32x32.png", sizes: "32x32", type: "image/png" },
     ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-    shortcut: "/favicon.ico",
+    apple: [{ url: "/Teqnowebs/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/Teqnowebs/favicon.ico",
   },
 };
 
