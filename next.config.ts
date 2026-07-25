@@ -3,7 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
-  basePath: "/Teqnowebs",
+  // Serve at domain root (public_html). Do not set basePath — that caused
+  // /Teqnowebs/Teqnowebs/... when files already lived under a Teqnowebs folder.
   images: {
     unoptimized: true,
     remotePatterns: [
