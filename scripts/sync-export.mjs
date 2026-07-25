@@ -19,6 +19,7 @@ const targets = [
   "services",
   "software",
   "_next",
+  ".htaccess",
 ];
 
 for (const name of targets) {
@@ -30,4 +31,5 @@ for (const name of targets) {
   }
 }
 
-console.log("Synced static export to repo root for Hostinger hosting.");
+console.log("Synced static export to repo root (public_html) for Hostinger.");
+
