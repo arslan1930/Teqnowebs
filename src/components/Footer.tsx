@@ -3,14 +3,16 @@ import Link from "next/link";
 import { Logo } from "./Logo";
 
 const serviceLinks = [
-  { href: "/services#web", label: "Web development" },
+  { href: "/services#web", label: "Website development" },
+  { href: "/services#uiux", label: "UI / UX design" },
   { href: "/services#design", label: "Graphic design" },
   { href: "/services#seo", label: "SEO & link building" },
   { href: "/software", label: "Custom software" },
 ];
 
 const softwareLinks = [
-  { href: "/software#sales", label: "Sales systems" },
+  { href: "/software#sales", label: "Sales manager / CRM" },
+  { href: "/software#finance", label: "Finance management" },
   { href: "/software#invoicing", label: "Invoicing" },
   { href: "/software#warehouse", label: "Warehouse" },
   { href: "/software#tracking", label: "Order tracking" },

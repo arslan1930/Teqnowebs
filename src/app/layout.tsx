@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: "%s · Teqnowebs",
   },
   description:
-    "Teqnowebs builds websites, graphic design, SEO, link building, and custom software for sales, invoicing, warehouse, and order tracking.",
+    "Teqnowebs builds websites, UI/UX, graphic design, SEO, link building, and custom software for sales, finance, invoicing, warehouse, and order tracking.",
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },

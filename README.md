@@ -16,7 +16,7 @@ npm run start -- -H 127.0.0.1 -p 3000
 
 Or for development: `npm run dev` (keep large toolchains outside the repo to avoid file-watcher limits).
 
-Open http://127.0.0.1:3000/Teqnowebs/ (production `basePath` is `/Teqnowebs`).
+Open http://127.0.0.1:3000/ (site is served at the **domain root** — no `/Teqnowebs` path prefix).
 
 Without Sanity env vars, the site still builds and shows a sample blog post.
 
@@ -71,17 +71,17 @@ Without Sanity team documents yet, the site uses the roster in `src/data/team.ts
 
 1. Add, edit, or delete posts / team photos in Sanity Studio.
 2. Run `npm run build` so Next.js fetches content and regenerates static HTML.
-3. Upload the fresh build into Hostinger `public_html/Teqnowebs/` (see below).
+3. Upload the fresh build into Hostinger `public_html/` (see below).
 
 Live updates without a rebuild are out of scope for this static Hostinger setup.
 
 ## Hostinger deploy
 
-Serve the site under **`/Teqnowebs`** (`public_html/Teqnowebs`).
+Serve the site at the **domain root** (`public_html`) — not under a nested `/Teqnowebs` folder (that caused URLs like `/Teqnowebs/Teqnowebs/`).
 
 1. Run `npm run build` (writes `index.html`, route folders including `blog/`, `_next/`, and `.htaccess` to the repo root / `out/`).
 2. In Hostinger → Domains → your domain → **Document root** = `public_html`.
-3. Upload the built site files into `public_html/Teqnowebs/` (`index.html`, `about/`, `blog/`, `contact/`, `services/`, `software/`, `_next/`, `404.html`, `.htaccess`, favicons, `logo.svg`).
-4. `.htaccess` uses `RewriteBase /Teqnowebs/` and maps clean URLs to the exported pages.
+3. Upload the built site files **directly into** `public_html/` (`index.html`, `about/`, `blog/`, `contact/`, `services/`, `software/`, `_next/`, `404.html`, `.htaccess`, favicons, `logo.svg`, `team/`).
+4. If an old `public_html/Teqnowebs/` folder exists, delete it after uploading to root (`.htaccess` also 301-redirects `/Teqnowebs/...` → `/...`).
 
-Visitors open `https://your-domain/Teqnowebs/`.
+Visitors open `https://your-domain/` and `https://your-domain/about/`.
