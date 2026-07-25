@@ -1,11 +1,23 @@
-# Hostinger / LiteSpeed — site lives at /Teqnowebs (public_html/Teqnowebs)
+# Hostinger / LiteSpeed — site at domain root (public_html)
+# URLs: https://mydomain.com/contact/  https://mydomain.com/about/  etc.
 DirectoryIndex index.html index.htm
 
 Options -Indexes +FollowSymLinks
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /Teqnowebs/
+  RewriteBase /
+
+  # Old /Teqnowebs/... installs → domain-root paths
+  RewriteRule ^[Tt]eqnowebs/?$ / [R=301,L]
+  RewriteRule ^[Tt]eqnowebs/(.*)$ /$1 [R=301,L]
+
+  # Capitalized page bookmarks → lowercase Next.js routes
+  RewriteRule ^Contact/?$ /contact/ [R=301,L]
+  RewriteRule ^About/?$ /about/ [R=301,L]
+  RewriteRule ^Services/?$ /services/ [R=301,L]
+  RewriteRule ^Software/?$ /software/ [R=301,L]
+  RewriteRule ^Blog/?$ /blog/ [R=301,L]
 
   # Serve existing files and folders as-is
   RewriteCond %{REQUEST_FILENAME} -f [OR]
