@@ -31,5 +31,5 @@ for (const name of targets) {
   }
 }
 
-console.log("Synced static export to repo root (public_html) for Hostinger.");
+console.log("Synced static export to repo root (upload into public_html/Teqnowebs).");
 
