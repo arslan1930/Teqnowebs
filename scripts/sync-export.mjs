@@ -26,6 +26,7 @@ const targets = [
   "favicon.ico",
   "favicon-32x32.png",
   "apple-touch-icon.png",
+  "team",
 ];
 
 for (const name of targets) {

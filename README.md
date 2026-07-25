@@ -37,12 +37,12 @@ Without Sanity env vars, the site still builds and shows a sample blog post.
 - `npm run dev` — development server
 - `npm run build` — production static export + sync to repo root
 - `npm start` — serve production build
-- `npm run sanity` — local Sanity Studio (add / edit / delete posts + images)
+- `npm run sanity` — local Sanity Studio (blog posts + team member photos)
 - `npm run sanity:deploy` — host Studio on `*.sanity.studio`
 
-## Blog (Sanity)
+## Blog & team (Sanity)
 
-Blog content is managed only in **Sanity Studio** (not on Hostinger). HTML for `/blog` is generated at **build time** from the Sanity Content API (good SEO).
+Blog posts and **team member photos** are managed in **Sanity Studio** (not on Hostinger). HTML is generated at **build time** from the Sanity Content API.
 
 ### One-time setup
 
@@ -51,13 +51,26 @@ Blog content is managed only in **Sanity Studio** (not on Hostinger). HTML for `
    - `NEXT_PUBLIC_SANITY_PROJECT_ID`
    - `NEXT_PUBLIC_SANITY_DATASET` (`production`)
    - `NEXT_PUBLIC_SANITY_API_VERSION` (e.g. `2025-01-01`)
-3. Run `npm run sanity` and sign in. Create a **Blog Post** with title, slug, excerpt, featured image + alt, body, `publishedAt`, and `published: true`.
-4. Optionally deploy Studio: `npm run sanity:deploy` → manage posts at your `*.sanity.studio` URL.
+3. Run `npm run sanity` and sign in.
+4. Optionally deploy Studio: `npm run sanity:deploy` → manage content at your `*.sanity.studio` URL.
+
+### Blog posts
+
+Create a **Blog Post** with title, slug, excerpt, featured image + alt, body, `publishedAt`, and `published: true`.
+
+### Team photos (avatars)
+
+1. In Sanity Studio, open **Team Member**.
+2. Create one document per person: **Name**, **Role**, **Photo** (upload/replace headshot), **Team group**, **Order**.
+3. Toggle **Show on site** off to hide someone without deleting them.
+4. Until a photo is uploaded, the About page shows initials in the avatar.
+
+Without Sanity team documents yet, the site uses the roster in `src/data/team.ts` and optional files in `public/team/` (see that folder’s README).
 
 ### Publish workflow
 
-1. Add, edit, or delete posts (and featured images) in Sanity Studio.
-2. Run `npm run build` so Next.js fetches published posts and regenerates static HTML.
+1. Add, edit, or delete posts / team photos in Sanity Studio.
+2. Run `npm run build` so Next.js fetches content and regenerates static HTML.
 3. Upload the fresh build into Hostinger `public_html/Teqnowebs/` (see below).
 
 Live updates without a rebuild are out of scope for this static Hostinger setup.

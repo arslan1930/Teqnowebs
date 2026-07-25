@@ -32,3 +32,17 @@ export const postBySlugQuery = groq`
 export const postSlugsQuery = groq`
   *[_type == "post" && published == true && defined(slug.current)][].slug.current
 `;
+
+export const teamMembersQuery = groq`
+  *[_type == "teamMember" && active != false] | order(order asc, name asc) {
+    _id,
+    name,
+    role,
+    group,
+    order,
+    photo {
+      ...,
+      alt
+    }
+  }
+`;

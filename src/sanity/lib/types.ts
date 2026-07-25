@@ -21,3 +21,12 @@ export type PostListItem = {
 export type Post = PostListItem & {
   body?: PortableTextBlock[] | null;
 };
+
+export type SanityTeamMember = {
+  _id: string;
+  name: string;
+  role: string;
+  group: string;
+  order?: number | null;
+  photo?: SanityImage | null;
+};
