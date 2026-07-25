@@ -1,4 +1,4 @@
-import { groq } from "next-sanity";
+import groq from "groq";
 
 export const postsQuery = groq`
   *[_type == "post" && published == true] | order(publishedAt desc) {

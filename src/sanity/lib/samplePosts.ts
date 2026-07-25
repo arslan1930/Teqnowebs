@@ -59,6 +59,11 @@ export const samplePosts: Post[] = [
   },
 ];
 
-export const samplePostList: PostListItem[] = samplePosts.map(
-  ({ body: _body, ...item }) => item,
-);
+export const samplePostList: PostListItem[] = samplePosts.map((post) => ({
+  _id: post._id,
+  title: post.title,
+  slug: post.slug,
+  excerpt: post.excerpt,
+  publishedAt: post.publishedAt,
+  featuredImage: post.featuredImage,
+}));

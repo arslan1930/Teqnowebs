@@ -49,6 +49,7 @@ const components: PortableTextComponents = {
       if (!url) return null;
       return (
         <figure className="mt-8">
+          {/* Portable Text inline images use CDN URLs; next/image not required for static export. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={url}
