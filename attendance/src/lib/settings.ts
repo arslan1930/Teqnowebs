@@ -1,21 +1,25 @@
 import {
   demoAddHoliday,
+  demoGetSettings,
   demoListHolidays,
   demoListProfiles,
   demoListTimings,
   demoRemoveHoliday,
+  demoSaveSettings,
   demoSaveTiming,
   demoUpdateProfile,
 } from "./demo-store";
 import { hasSupabaseConfig } from "./config";
 import { getSupabase } from "./supabase";
 import type {
+  AppSettings,
   CompanyHoliday,
   OfficeTiming,
   StaffGroup,
   StaffProfile,
   StaffRole,
 } from "./types";
+import { DEFAULT_TIMEZONE } from "./types";
 
 function mapTiming(row: Record<string, unknown>): OfficeTiming {
   return {
@@ -152,4 +156,45 @@ export async function updateStaffProfile(
 export async function getTimingForGroup(group: StaffGroup): Promise<OfficeTiming | null> {
   const timings = await listTimings();
   return timings.find((t) => t.staffGroup === group) ?? null;
+}
+
+export async function getAppSettings(): Promise<AppSettings> {
+  if (!hasSupabaseConfig) return demoGetSettings();
+  const supabase = getSupabase();
+  if (!supabase) return demoGetSettings();
+  const { data, error } = await supabase.from("app_settings").select("*").eq("id", 1).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) {
+    return { timezone: DEFAULT_TIMEZONE, allowedIps: [] };
+  }
+  return {
+    timezone: (data.timezone as string) || DEFAULT_TIMEZONE,
+    allowedIps: Array.isArray(data.allowed_ips) ? (data.allowed_ips as string[]) : [],
+  };
+}
+
+export async function saveAppSettings(settings: AppSettings): Promise<AppSettings> {
+  const cleaned: AppSettings = {
+    timezone: settings.timezone.trim() || DEFAULT_TIMEZONE,
+    allowedIps: settings.allowedIps.map((ip) => ip.trim()).filter(Boolean),
+  };
+  if (!hasSupabaseConfig) return demoSaveSettings(cleaned);
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Supabase is not configured");
+  const { error } = await supabase.from("app_settings").upsert({
+    id: 1,
+    timezone: cleaned.timezone,
+    allowed_ips: cleaned.allowedIps,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw new Error(error.message);
+  return cleaned;
+}
+
+export function htaccessSnippet(allowedIps: string[]): string {
+  const ips = allowedIps.length ? allowedIps : ["REPLACE_WITH_OFFICE_PUBLIC_IP"];
+  const lines = ips.map((ip) => `  Require ip ${ip}`);
+  return `<IfModule mod_authz_core.c>
+${lines.join("\n")}
+</IfModule>`;
 }
