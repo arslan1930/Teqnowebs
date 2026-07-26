@@ -48,20 +48,35 @@ function buildMailto(form: HTMLFormElement) {
   return `mailto:${contactDetails.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
+function openMailto(href: string) {
+  const anchor = document.createElement("a");
+  anchor.href = href;
+  anchor.rel = "noopener noreferrer";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
 export function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const mailto = buildMailto(e.currentTarget);
-    window.location.href = mailto;
+    const form = e.currentTarget;
+    try {
+      openMailto(buildMailto(form));
+    } catch {
+      // mailto handlers can throw in some browsers; still show confirmation
+    }
     setSubmitted(true);
   }
 
   if (submitted) {
     return (
       <div className="border border-accent/30 bg-accent/5 p-8 sm:p-10">
-        <h2 className="font-display text-2xl font-semibold text-ink">Thanks — open your email to send.</h2>
+        <h2 className="font-display text-2xl font-semibold text-ink">
+          Thanks — open your email to send.
+        </h2>
         <p className="mt-3 text-muted">
           Your message is addressed to{" "}
           <a
@@ -84,6 +99,7 @@ export function ContactForm() {
           <input
             required
             name="name"
+            autoComplete="name"
             className="mt-2 w-full border border-line bg-white px-4 py-3 text-ink outline-none transition focus:border-accent"
             placeholder="Your name"
           />
@@ -94,6 +110,7 @@ export function ContactForm() {
             required
             type="email"
             name="email"
+            autoComplete="email"
             className="mt-2 w-full border border-line bg-white px-4 py-3 text-ink outline-none transition focus:border-accent"
             placeholder="you@company.com"
           />
@@ -103,6 +120,7 @@ export function ContactForm() {
         <span className="text-sm font-medium text-ink">Company</span>
         <input
           name="company"
+          autoComplete="organization"
           className="mt-2 w-full border border-line bg-white px-4 py-3 text-ink outline-none transition focus:border-accent"
           placeholder="Optional"
         />
