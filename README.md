@@ -35,6 +35,19 @@ Examples: `/contact/`, `/about/`, `/services/`, `/software/`, `/blog/`.
 - `npx serve out` — preview the static export (`npm start` is not used with `output: "export"`)
 - `npm run sanity` — local Sanity Studio
 - `npm run sanity:deploy` — host Studio on `*.sanity.studio`
+- `npm run attendance:dev` — staff attendance app (subdomain)
+- `npm run attendance:build` — build attendance static export (`attendance/out/`)
+
+## Attendance subdomain (`attendance.teqnowebs.com`)
+
+| | Main site | Attendance |
+| --- | --- | --- |
+| URL | `https://teqnowebs.com/` | `https://attendance.teqnowebs.com/` |
+| Folder | `public_html/` | `public_html/attendance/` |
+| Access | Worldwide | Office network only (IP allowlist) |
+
+Staff login + check-in/out app lives in [`attendance/`](attendance/).  
+Deploy into `public_html/attendance/` only. Set the office public IP in [`attendance/public/.htaccess`](attendance/public/.htaccess) (placeholder `REPLACE_WITH_OFFICE_PUBLIC_IP`) — see [`attendance/OFFICE_IP.md`](attendance/OFFICE_IP.md). Do **not** IP-lock the main site.
 
 ## Blog & team (Sanity)
 
