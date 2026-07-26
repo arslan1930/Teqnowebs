@@ -1,69 +1,40 @@
-# Teqnowebs
+# Teqnowebs monorepo
 
-Agency website for Teqnowebs — web development, graphic design, SEO, link building, and custom business software (sales, invoicing, warehouse, order tracking).
+| App | Path | URL | Stack |
+|-----|------|-----|--------|
+| **Marketing site** | [`site/`](site/) | `https://teqnowebs.com` | **Laravel + MySQL** (Hostinger) |
+| Attendance | [`attendance/`](attendance/) | `https://attendance.teqnowebs.com` | Next.js |
+| Ops / Link Desk | [`ops/`](ops/) | `https://ops.teqnowebs.com` | Next.js + SQLite |
 
-## Run locally
+## Marketing site (Laravel)
 
 ```bash
-export PATH="$(pwd)/.tools/node/bin:$PATH"
-npm install
-cp .env.example .env.local   # then set your Sanity project ID
-npm run build
-npx serve@latest out -l 3000
+cd site
+composer install
+cp .env.example .env && php artisan key:generate
+# SQLite local: set DB_CONNECTION=sqlite and touch database/database.sqlite
+php artisan migrate --seed
+npm install && npm run build
+php artisan serve
 ```
 
-Open http://127.0.0.1:3000/ (domain-root routes — no `/Teqnowebs` prefix).
+**Hostinger zip:** [`deploy/teqnowebs-laravel.zip`](deploy/teqnowebs-laravel.zip)  
+Document root must point at Laravel `public/`. See [`site/README.md`](site/README.md).
 
-Examples: `/contact/`, `/about/`, `/services/`, `/software/`, `/blog/`.
+Seed admin: `admin@teqnowebs.com` / `teqnowebs123`
 
-## Pages
+## Attendance
 
-| Route | Content |
-| --- | --- |
-| `/` | Brand-first home + service pillars + software spotlight |
-| `/services` | Websites, UI/UX, graphic design, SEO & link building |
-| `/software` | Sales manager/CRM, finance, invoicing, warehouse, order tracking |
-| `/blog` | Blog index (Sanity posts at build time) |
-| `/blog/[slug]` | Blog post |
-| `/about` | Agency story + team |
-| `/contact` | Quote form |
+See [`attendance/README.md`](attendance/). Deploy under `public_html/attendance/` or subdomain root. Office IP allowlist for staff punches.
 
-## Scripts
+## Ops / Link Desk
 
-- `npm run dev` — development server
-- `npm run build` — production static export + sync to repo root
-- `npx serve out` — preview the static export (`npm start` is not used with `output: "export"`)
-- `npm run sanity` — local Sanity Studio
-- `npm run sanity:deploy` — host Studio on `*.sanity.studio`
-- `npm run attendance:dev` — staff attendance app (subdomain)
-- `npm run attendance:build` — build attendance static export (`attendance/out/`)
+See [`ops/README.md`](ops/). Shared team DB needs Node on port 3002 (not static Hostinger). Demo zip: `deploy/teqnowebs-ops.zip`.
 
-## Attendance subdomain (`attendance.teqnowebs.com`)
+## Staff integration
 
-| | Main site | Attendance |
-| --- | --- | --- |
-| URL | `https://teqnowebs.com/` | `https://attendance.teqnowebs.com/` |
-| Folder | `public_html/` | `public_html/attendance/` |
-| Access | Worldwide | Office network only (IP allowlist) |
+After Laravel login → **`/staff`** links to Attendance and Ops subdomains. Site content admin at **`/admin`**.
 
-Staff login + check-in/out app lives in [`attendance/`](attendance/).  
-Deploy into `public_html/attendance/` only. Set the office public IP in [`attendance/public/.htaccess`](attendance/public/.htaccess) (placeholder `REPLACE_WITH_OFFICE_PUBLIC_IP`) — see [`attendance/OFFICE_IP.md`](attendance/OFFICE_IP.md). Do **not** IP-lock the main site.
+## Legacy Next.js marketing export
 
-## Blog & team (Sanity)
-
-Managed in **Sanity Studio**. After publish/edit, run `npm run build` and re-upload to Hostinger.
-
-Env vars: see `.env.example`.
-
-## Hostinger deploy (domain-root URLs)
-
-Goal: `https://mydomain.com/contact/`, `https://mydomain.com/about/`, etc.
-
-1. Run `npm run build`.
-2. Hostinger → Domains → your domain → **Document root** = `public_html`.
-3. Upload build files **directly into** `public_html/`:
-   - `index.html`, `contact/`, `about/`, `services/`, `software/`, `blog/`, `_next/`, `.htaccess`, favicons, `logo.svg`, `team/`
-4. **Delete** any old `public_html/Teqnowebs/` folder (that caused `/Teqnowebs/...` and client errors).
-5. `.htaccess` redirects `/Teqnowebs/...` → `/...` and `/Contact` → `/contact/`.
-
-Canonical routes are lowercase (`/contact/`). Capitalized URLs like `/Contact` redirect automatically.
+The previous static Next.js marketing files at the repo root are superseded by [`site/`](site/). Prefer Laravel for new deploys.

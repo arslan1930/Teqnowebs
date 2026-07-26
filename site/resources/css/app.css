@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --ink: #1e293b;
+    --ink-soft: #334155;
+    --mist: #e2e8f0;
+    --paper: #fff;
+    --accent: #2563eb;
+    --accent-deep: #1d4ed8;
+    --signal: #64748b;
+    --line: #1e293b1f;
+    --muted: #64748b;
+}
+
+body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+    font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+}
+
+.atmosphere {
+    background:
+        radial-gradient(80% 60% at 72% 18%, #2563eb2e, #0000 58%),
+        radial-gradient(55% 45% at 12% 82%, #64748b1f, #0000 55%),
+        radial-gradient(40% 40% at 90% 90%, #2563eb14, #0000 60%),
+        linear-gradient(160deg, #eef2f7, #f4f7fa 45%, #fff);
+}
+
+.band-soft {
+    background:
+        radial-gradient(70% 60% at 85% 15%, #2563eb1f, #0000 60%),
+        radial-gradient(55% 50% at 10% 90%, #64748b1a, #0000 55%),
+        linear-gradient(150deg, #eaeef4, #f2f5f9 50%, #e8edf4);
+}
+
+.card-soft {
+    background: linear-gradient(160deg, #fff, #f5f8fc);
+    border: 1px solid #2563eb1a;
+}
+
+.cta-gradient {
+    background: linear-gradient(120deg, #2563eb, #1d4ed8 55%, #1e40af);
+    box-shadow: 0 10px 24px -12px #2563eb99;
+}
+
+.cta-gradient:hover {
+    filter: brightness(1.05);
+}
+
+.grid-overlay {
+    background-image:
+        linear-gradient(#1e293b0a 1px, transparent 1px),
+        linear-gradient(90deg, #1e293b0a 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 20%, transparent 75%);
+}
+
+.text-ink { color: var(--ink); }
+.text-ink-soft { color: var(--ink-soft); }
+.text-muted { color: var(--muted); }
+.text-accent { color: var(--accent); }
+.text-accent-deep { color: var(--accent-deep); }
+.border-line { border-color: var(--line); }
+.bg-paper { background: var(--paper); }
+.bg-mist\/30 { background-color: rgba(226, 232, 240, 0.3); }
