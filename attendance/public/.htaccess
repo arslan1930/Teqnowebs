@@ -1,7 +1,21 @@
 # attendance.teqnowebs.com → public_html/attendance
+# Office-network only. Main site (teqnowebs.com) stays public — do NOT copy this IP block there.
 DirectoryIndex index.html index.htm
+ErrorDocument 403 /403.html
 
 Options -Indexes +FollowSymLinks
+
+# ---------------------------------------------------------------------------
+# OFFICE IP ALLOWLIST
+# Replace REPLACE_WITH_OFFICE_PUBLIC_IP with your office public IP
+# (on TQwebs / TQwebs 5G Wi‑Fi, open https://whatismyip.com).
+# Add another "Require ip ..." line if you have a second office IP.
+# See OFFICE_IP.md in the attendance app folder.
+# ---------------------------------------------------------------------------
+<IfModule mod_authz_core.c>
+  Require ip REPLACE_WITH_OFFICE_PUBLIC_IP
+  # Require ip SECOND_IP_IF_NEEDED
+</IfModule>
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
