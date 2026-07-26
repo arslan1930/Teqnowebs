@@ -64,9 +64,12 @@ export default function LoginPage() {
 
         {!hasSupabaseConfig ? (
           <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            Demo mode: use <strong>staff@teqnowebs.com</strong> /{" "}
-            <strong>attendance123</strong>. Connect Supabase for live company
-            accounts.
+            Demo mode — password <strong>attendance123</strong> for all:
+            <br />
+            Staff: <strong>staff@teqnowebs.com</strong> (female) ·{" "}
+            <strong>hr@teqnowebs.com</strong> (male)
+            <br />
+            Admin: <strong>admin@teqnowebs.com</strong>
           </p>
         ) : null}
 
