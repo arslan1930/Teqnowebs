@@ -4,8 +4,6 @@ Agency website for Teqnowebs — web development, graphic design, SEO, link buil
 
 ## Run locally
 
-If system Node is missing, use the bundled binary (symlink at `.tools` → `/tmp/teqnowebs-tools` if present):
-
 ```bash
 export PATH="$(pwd)/.tools/node/bin:$PATH"
 npm install
@@ -14,11 +12,9 @@ npm run build
 npx serve@latest out -l 3000
 ```
 
-Or for development: `npm run dev` (keep large toolchains outside the repo to avoid file-watcher limits).
+Open http://127.0.0.1:3000/ (domain-root routes — no `/Teqnowebs` prefix).
 
-Open http://127.0.0.1:3000/Teqnowebs/ (production `basePath` is `/Teqnowebs`).
-
-Without Sanity env vars, the site still builds and shows a sample blog post.
+Examples: `/contact/`, `/about/`, `/services/`, `/software/`, `/blog/`.
 
 ## Pages
 
@@ -36,42 +32,25 @@ Without Sanity env vars, the site still builds and shows a sample blog post.
 
 - `npm run dev` — development server
 - `npm run build` — production static export + sync to repo root
-- `npm start` — not used with static export; use `npx serve out` instead
-- `npm run sanity` — local Sanity Studio (blog posts + team member photos)
+- `npx serve out` — preview the static export (`npm start` is not used with `output: "export"`)
+- `npm run sanity` — local Sanity Studio
 - `npm run sanity:deploy` — host Studio on `*.sanity.studio`
 
 ## Blog & team (Sanity)
 
-Blog posts and **team member photos** are managed in **Sanity Studio** (not on Hostinger). HTML is generated at **build time** from the Sanity Content API.
+Managed in **Sanity Studio**. After publish/edit, run `npm run build` and re-upload to Hostinger.
 
-### One-time setup
+Env vars: see `.env.example`.
 
-1. Create a project at [sanity.io/manage](https://www.sanity.io/manage) (or run `npx sanity init` and reuse this repo’s schema).
-2. Copy `.env.example` → `.env.local` and set:
-   - `NEXT_PUBLIC_SANITY_PROJECT_ID`
-   - `NEXT_PUBLIC_SANITY_DATASET` (`production`)
-   - `NEXT_PUBLIC_SANITY_API_VERSION` (e.g. `2025-01-01`)
-3. Run `npm run sanity` and sign in.
-4. Optionally deploy Studio: `npm run sanity:deploy` → manage content at your `*.sanity.studio` URL.
+## Hostinger deploy (domain-root URLs)
 
-### Publish workflow
-
-1. Add, edit, or delete posts / team photos in Sanity Studio.
-2. Run `npm run build` so Next.js fetches content and regenerates static HTML.
-3. Upload the fresh build into Hostinger (see below).
-
-## Hostinger deploy
-
-Serve the site at **`/Teqnowebs`** (`public_html/Teqnowebs`).
+Goal: `https://mydomain.com/contact/`, `https://mydomain.com/about/`, etc.
 
 1. Run `npm run build`.
-2. Document root stays `public_html`.
-3. Upload build files **directly into** `public_html/Teqnowebs/` so you see:
-   - `public_html/Teqnowebs/index.html`
-   - `public_html/Teqnowebs/contact/`
-   - `public_html/Teqnowebs/_next/`
-   - `public_html/Teqnowebs/.htaccess`
-4. **Do not** nest another folder: `public_html/Teqnowebs/Teqnowebs/` causes `/Teqnowebs/Teqnowebs/` URLs and breaks the contact page.
-5. Remove any outdated copy of the site sitting in `public_html/` root that still points assets at `/Teqnowebs/_next` while pages load from `/contact/` (that mismatch causes a client-side error).
+2. Hostinger → Domains → your domain → **Document root** = `public_html`.
+3. Upload build files **directly into** `public_html/`:
+   - `index.html`, `contact/`, `about/`, `services/`, `software/`, `blog/`, `_next/`, `.htaccess`, favicons, `logo.svg`, `team/`
+4. **Delete** any old `public_html/Teqnowebs/` folder (that caused `/Teqnowebs/...` and client errors).
+5. `.htaccess` redirects `/Teqnowebs/...` → `/...` and `/Contact` → `/contact/`.
 
-Visitors open `https://your-domain/Teqnowebs/` and `https://your-domain/Teqnowebs/contact/`.
+Canonical routes are lowercase (`/contact/`). Capitalized URLs like `/Contact` redirect automatically.

@@ -39,7 +39,7 @@ const sampleBody: PortableTextBlock[] = [
       {
         _type: "span",
         _key: "s3",
-        text: "Add, edit, or delete posts in Sanity Studio. When you are ready for the live site, run npm run build and upload the fresh files into Hostinger public_html/Teqnowebs/.",
+        text: "Add, edit, or delete posts in Sanity Studio. When you are ready for the live site, run npm run build and upload the fresh files into Hostinger public_html/.",
         marks: [],
       },
     ],

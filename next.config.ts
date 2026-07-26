@@ -3,9 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
-  // Hostinger folder: public_html/Teqnowebs → https://domain/Teqnowebs/
-  // Upload build CONTENTS into that folder (do not nest another Teqnowebs/).
-  basePath: "/Teqnowebs",
+  // Domain root: https://mydomain.com/contact/ (no /Teqnowebs prefix)
+  // Upload build CONTENTS into public_html/
   images: {
     unoptimized: true,
     remotePatterns: [
