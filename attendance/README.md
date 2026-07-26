@@ -2,6 +2,9 @@
 
 Staff login + check-in / check-out for company attendance.
 
+**Access:** office network only (IP allowlist). See [`OFFICE_IP.md`](OFFICE_IP.md).  
+The main marketing site `teqnowebs.com` stays available worldwide.
+
 ## Local
 
 ```bash
@@ -12,6 +15,8 @@ npm run dev
 ```
 
 Open http://127.0.0.1:3001/
+
+Local dev is not IP-locked (only the Hostinger `.htaccess` enforce that).
 
 ### Demo login (no Supabase)
 
@@ -26,14 +31,23 @@ Open http://127.0.0.1:3001/
 4. Copy project URL + anon key into `.env.local`:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-5. `npm run build`
+5. Set your office public IP in [`public/.htaccess`](public/.htaccess) (replace `REPLACE_WITH_OFFICE_PUBLIC_IP`).
+6. `npm run build`
 
-## Hostinger subdomain
+## Hostinger subdomain (office-only)
+
+| | Main site | Attendance |
+| --- | --- | --- |
+| URL | `https://teqnowebs.com/` | `https://attendance.teqnowebs.com/` |
+| Folder | `public_html/` | `public_html/attendance/` |
+| IP lock | none | office public IP in attendance `.htaccess` |
 
 1. hPanel → **Domains** → **Subdomains** → create `attendance` for `teqnowebs.com`.
-2. Document root / folder: `public_html/attendance` (Hostinger often creates this automatically).
-3. From this folder: `npm run build` → upload everything inside `attendance/out/` into `public_html/attendance/`.
-4. DNS: ensure `attendance.teqnowebs.com` points to your Hostinger hosting (usually automatic with Hostinger DNS).
-5. Visit `https://attendance.teqnowebs.com/`
+2. Document root / folder: `public_html/attendance`.
+3. On office Wi‑Fi, get your public IP ([whatismyip.com](https://whatismyip.com)) and set it in `public/.htaccess` (see [`OFFICE_IP.md`](OFFICE_IP.md)).
+4. `npm run build` → upload everything inside `attendance/out/` into `public_html/attendance/`.
+5. Confirm the deployed `.htaccess` still has your real office IP (not the placeholder).
+6. From office Wi‑Fi: open `https://attendance.teqnowebs.com/`. From elsewhere you should see the office-only 403 page.
 
-Do **not** put this app inside the main marketing site’s `public_html` root mix of routes — keep it in the subdomain folder only.
+Do **not** put IP allowlist rules on the main site `public_html/.htaccess`.  
+Do **not** mix this app into the main marketing site root — keep it in the subdomain folder only.

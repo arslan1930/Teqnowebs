@@ -40,7 +40,14 @@ Examples: `/contact/`, `/about/`, `/services/`, `/software/`, `/blog/`.
 
 ## Attendance subdomain (`attendance.teqnowebs.com`)
 
-Separate staff login + check-in/out app in [`attendance/`](attendance/). See [`attendance/README.md`](attendance/README.md) for Supabase setup and Hostinger subdomain deploy into `public_html/attendance/`.
+| | Main site | Attendance |
+| --- | --- | --- |
+| URL | `https://teqnowebs.com/` | `https://attendance.teqnowebs.com/` |
+| Folder | `public_html/` | `public_html/attendance/` |
+| Access | Worldwide | Office network only (IP allowlist) |
+
+Staff login + check-in/out app lives in [`attendance/`](attendance/).  
+Deploy into `public_html/attendance/` only. Set the office public IP in [`attendance/public/.htaccess`](attendance/public/.htaccess) (placeholder `REPLACE_WITH_OFFICE_PUBLIC_IP`) — see [`attendance/OFFICE_IP.md`](attendance/OFFICE_IP.md). Do **not** IP-lock the main site.
 
 ## Blog & team (Sanity)
 
