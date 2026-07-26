@@ -1,18 +1,15 @@
-# Teqnowebs Attendance (`attendance.teqnowebs.com`)
+# Teqnowebs Attendance
 
-Staff login + check-in / check-out for ~15 people, with an **admin panel** for:
+One app (`attendance/`), one database (Supabase): staff + admin.
 
-- Female / Male office timings (separate start/end + late-after)
-- Company holiday announcements
-- Personal leave approvals (**1 approved leave per calendar month**)
-- Today roster (present / late / absent)
-- Attendance report + **CSV export**
-- Manual punch corrections with admin note
-- Settings: timezone (default `Asia/Karachi`) + allowed office IP list (documented + `.htaccess` snippet)
-- Demo mode: add staff / reset password locally
+- **Staff** (`/dashboard`): office **LAN only** (reboot-safe; not ISP public IP)
+- **Admin** (`/admin`): **from anywhere** after login
+- Checkout: blocked before **3:00pm**; **3:00–3:59pm = half leave**; 4:00pm+ = full day
+- Times shown as `12:30pm`
+- Admin one-click employee stats: days present, late, half leaves, personal leaves
 
-**Access:** office network only (IP allowlist). See [`OFFICE_IP.md`](OFFICE_IP.md).  
-Main site `teqnowebs.com` stays worldwide.
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) and [`OFFICE_IP.md`](OFFICE_IP.md).  
+Main site `teqnowebs.com` stays separate / worldwide.
 
 ## Local
 

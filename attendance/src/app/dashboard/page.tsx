@@ -328,9 +328,13 @@ export default function DashboardPage() {
                 ? "Already checked out"
                 : !status.checkedIn
                   ? "Check in first"
-                  : "Mark check-out"}
+                  : "Mark check-out (after 3:00pm)"}
           </button>
         </div>
+        <p className="mt-3 text-xs text-[var(--muted)]">
+          Check-out opens at <strong>3:00pm</strong>. Between <strong>3:00pm–3:59pm</strong> =
+          half leave. From <strong>4:00pm</strong> = full day.
+        </p>
       </section>
 
       <section className="panel mt-8 rounded-2xl p-6 sm:p-8">

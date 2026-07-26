@@ -11,8 +11,9 @@ import {
   demoResetPassword,
 } from "./demo-store";
 import { hasSupabaseConfig } from "./config";
-import { partsInTz, todayDateStr } from "./dates";
+import { minutesSinceMidnightInTz, partsInTz, todayDateStr } from "./dates";
 import { listLeaves } from "./leave";
+import { checkoutBlockedReason, isHalfLeaveCheckout } from "./rules";
 import {
   getAppSettings,
   getTimingForGroup,
@@ -185,11 +186,23 @@ export async function markAttendance(
     if (todays.some((e) => e.type === "check_out")) {
       throw new Error("Already checked out today.");
     }
+    const nowMins = minutesSinceMidnightInTz(new Date(), tz);
+    const blocked = checkoutBlockedReason(nowMins);
+    if (blocked) throw new Error(blocked);
   }
 
   const clientIp = await fetchPublicIp();
+  let finalNote = note || null;
+  if (type === "check_out") {
+    const nowMins = minutesSinceMidnightInTz(new Date(), tz);
+    if (isHalfLeaveCheckout(nowMins)) {
+      finalNote = finalNote
+        ? `${finalNote} · Half leave (checkout 3–4pm)`
+        : "Half leave (checkout 3–4pm)";
+    }
+  }
 
-  if (!hasSupabaseConfig) return demoMark(userId, type, note, clientIp);
+  if (!hasSupabaseConfig) return demoMark(userId, type, finalNote || undefined, clientIp);
 
   const supabase = getSupabase();
   if (!supabase) throw new Error("Supabase is not configured");
@@ -198,7 +211,7 @@ export async function markAttendance(
     .insert({
       user_id: userId,
       type,
-      note: note || null,
+      note: finalNote,
       client_ip: clientIp,
       is_manual: false,
     })

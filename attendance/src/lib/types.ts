@@ -5,6 +5,7 @@ export type LeaveStatus = "pending" | "approved" | "rejected";
 export type PunchStatus =
   | "on_time"
   | "late"
+  | "half_leave"
   | "holiday"
   | "on_leave"
   | "missing_checkout"
@@ -90,6 +91,20 @@ export type DayAttendanceRow = {
   status: PunchStatus;
   note: string | null;
   isManual: boolean;
+  halfLeave: boolean;
+  wasLate: boolean;
+};
+
+export type EmployeePeriodStats = {
+  userId: string;
+  userName: string;
+  staffGroup: StaffGroup;
+  daysPresent: number;
+  lateDays: number;
+  halfLeaves: number;
+  personalLeaves: number;
+  absentDays: number;
+  missingCheckoutDays: number;
 };
 
 export const GROUP_LABELS: Record<StaffGroup, string> = {

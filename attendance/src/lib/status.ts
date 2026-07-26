@@ -4,6 +4,7 @@ import {
   partsInTz,
   todayDateStr,
 } from "./dates";
+import { isHalfLeaveCheckout } from "./rules";
 import type {
   AttendanceEvent,
   CompanyHoliday,
@@ -23,6 +24,16 @@ export function eventsOnDate(
   timeZone: string,
 ): AttendanceEvent[] {
   return events.filter((e) => partsInTz(new Date(e.createdAt), timeZone).dateStr === dateStr);
+}
+
+function isLate(
+  checkInIso: string,
+  timing: OfficeTiming,
+  timeZone: string,
+): boolean {
+  const checkMins = minutesSinceMidnightInTz(new Date(checkInIso), timeZone);
+  const limit = hhmmToMinutes(timing.startTime) + timing.lateAfterMinutes;
+  return checkMins > limit;
 }
 
 export function getDayStatus(
@@ -59,32 +70,33 @@ export function getDayStatus(
     punchStatus = isToday ? "none" : "absent";
     message = isToday ? "You have not checked in yet today." : "Absent — no check-in recorded.";
   } else if (checkedIn && !checkedOut) {
+    const late = checkIn && opts?.timing ? isLate(checkIn.createdAt, opts.timing, timeZone) : false;
+    punchStatus = late ? "late" : "on_time";
     if (isToday) {
-      punchStatus =
-        checkIn && opts?.timing
-          ? isLate(checkIn.createdAt, dateStr, opts.timing, timeZone)
-            ? "late"
-            : "on_time"
-          : "on_time";
-      message =
-        punchStatus === "late"
-          ? "Checked in late. Don’t forget to check out before you leave."
-          : "Checked in. Don’t forget to check out before you leave.";
+      message = late
+        ? "Checked in late. Check-out opens at 3:00pm (3:00–3:59pm = half leave)."
+        : "Checked in. Check-out opens at 3:00pm (3:00–3:59pm = half leave).";
     } else {
       punchStatus = "missing_checkout";
       message = "Missing checkout — checked in but never checked out.";
     }
   } else {
-    punchStatus =
-      checkIn && opts?.timing
-        ? isLate(checkIn.createdAt, dateStr, opts.timing, timeZone)
-          ? "late"
-          : "on_time"
-        : "on_time";
-    message =
-      punchStatus === "late"
-        ? "Day complete (late check-in)."
-        : "Day complete — checked in and out.";
+    const late = checkIn && opts?.timing ? isLate(checkIn.createdAt, opts.timing, timeZone) : false;
+    const outMins = checkOut
+      ? minutesSinceMidnightInTz(new Date(checkOut.createdAt), timeZone)
+      : 0;
+    if (isHalfLeaveCheckout(outMins)) {
+      punchStatus = "half_leave";
+      message = late
+        ? "Half leave (checked out 3:00–3:59pm) · also late check-in."
+        : "Half leave — checked out between 3:00pm and 4:00pm.";
+    } else {
+      punchStatus = late ? "late" : "on_time";
+      message =
+        punchStatus === "late"
+          ? "Day complete (late check-in)."
+          : "Day complete — checked in and out after 4:00pm.";
+    }
   }
 
   return {
@@ -94,19 +106,6 @@ export function getDayStatus(
     punchStatus,
     message,
   };
-}
-
-function isLate(
-  checkInIso: string,
-  dateStr: string,
-  timing: OfficeTiming,
-  timeZone: string,
-): boolean {
-  const checkMins = minutesSinceMidnightInTz(new Date(checkInIso), timeZone);
-  const limit = hhmmToMinutes(timing.startTime) + timing.lateAfterMinutes;
-  // Ensure check-in is on same calendar date in TZ
-  void dateStr;
-  return checkMins > limit;
 }
 
 export function holidayOnDate(
@@ -168,6 +167,13 @@ export function buildDayRows(input: {
       });
       const note =
         [checkIn?.note, checkOut?.note].filter(Boolean).join(" · ") || null;
+      const wasLate = Boolean(
+        checkIn &&
+          timing &&
+          !holiday &&
+          !leave &&
+          isLate(checkIn.createdAt, timing, input.timeZone),
+      );
       rows.push({
         date,
         userId: profile.id,
@@ -180,6 +186,8 @@ export function buildDayRows(input: {
         status: status.punchStatus,
         note,
         isManual: Boolean(checkIn?.isManual || checkOut?.isManual),
+        halfLeave: status.punchStatus === "half_leave",
+        wasLate,
       });
     }
   }
@@ -196,6 +204,7 @@ export function toCsv(rows: DayAttendanceRow[]): string {
     "name",
     "group",
     "status",
+    "half_leave",
     "check_in",
     "check_out",
     "check_in_ip",
@@ -209,6 +218,7 @@ export function toCsv(rows: DayAttendanceRow[]): string {
       r.userName,
       r.staffGroup,
       r.status,
+      r.halfLeave ? "yes" : "no",
       r.checkInAt || "",
       r.checkOutAt || "",
       r.checkInIp || "",

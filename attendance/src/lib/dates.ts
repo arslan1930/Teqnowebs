@@ -64,30 +64,37 @@ export function parseTimeOnDate(dateStr: string, hhmm: string): Date {
   return d;
 }
 
+/** e.g. "12:30pm" / "3:00pm" */
+export function formatAmPm(date: Date, timeZone?: string): string {
+  const raw = date.toLocaleTimeString("en-US", {
+    timeZone,
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return raw.replace(/\s/g, "").toLowerCase();
+}
+
 export function formatTimeLabel(hhmm: string): string {
   const [h, m] = hhmm.split(":").map(Number);
   const d = new Date();
   d.setHours(h || 0, m || 0, 0, 0);
-  return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  return formatAmPm(d);
 }
 
 export function formatWhen(iso: string, timeZone = DEFAULT_TIMEZONE): string {
-  return new Date(iso).toLocaleString(undefined, {
+  const d = new Date(iso);
+  const day = d.toLocaleDateString("en-US", {
     timeZone,
     weekday: "short",
     day: "numeric",
     month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
   });
+  return `${day} · ${formatAmPm(d, timeZone)}`;
 }
 
 export function formatClock(iso: string, timeZone = DEFAULT_TIMEZONE): string {
-  return new Date(iso).toLocaleTimeString(undefined, {
-    timeZone,
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatAmPm(new Date(iso), timeZone);
 }
 
 export function addDays(dateStr: string, delta: number): string {
@@ -109,4 +116,11 @@ export function eachDateInclusive(from: string, to: string): string[] {
     cur = addDays(cur, 1);
   }
   return out;
+}
+
+/** `YYYY-MM` → last calendar day `YYYY-MM-DD` */
+export function endOfMonth(ym: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m, 0));
+  return d.toISOString().slice(0, 10);
 }

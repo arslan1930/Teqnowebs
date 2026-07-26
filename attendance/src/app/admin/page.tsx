@@ -13,9 +13,14 @@ import {
   resetStaffPassword,
   upsertDayAttendance,
 } from "@/lib/attendance";
-import { daysAgo, formatClock, todayDateStr } from "@/lib/dates";
+import { daysAgo, endOfMonth, formatClock, monthKey, todayDateStr } from "@/lib/dates";
 import { listLeaves, reviewLeave } from "@/lib/leave";
-import { attendanceCsv, attendanceReport, downloadCsv } from "@/lib/reports";
+import {
+  attendanceCsv,
+  attendanceReport,
+  downloadCsv,
+  employeeStatsFor,
+} from "@/lib/reports";
 import {
   addHoliday,
   getAppSettings,
@@ -32,6 +37,7 @@ import type {
   AppSettings,
   CompanyHoliday,
   DayAttendanceRow,
+  EmployeePeriodStats,
   LeaveRequest,
   OfficeTiming,
   RosterRow,
@@ -74,12 +80,17 @@ export default function AdminPage() {
   const [editOut, setEditOut] = useState("18:00");
   const [editNote, setEditNote] = useState("");
   const [clearOut, setClearOut] = useState(false);
+  const [statsMonth, setStatsMonth] = useState(monthKey(todayDateStr()));
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [selectedStats, setSelectedStats] = useState<EmployeePeriodStats | null>(null);
 
   const refresh = useCallback(async () => {
     const s = await getAppSettings();
     setSettings(s);
     setIpDraft(s.allowedIps.join("\n"));
     const tz = s.timezone || DEFAULT_TIMEZONE;
+    const monthStart = `${statsMonth}-01`;
+    const monthEnd = endOfMonth(statsMonth);
     const [t, h, l, st, r, rep] = await Promise.all([
       listTimings(),
       listHolidays(),
@@ -99,7 +110,27 @@ export default function AdminPage() {
     setRoster(r);
     setReport(rep);
     setHolDate((d) => d || todayDateStr(tz));
-  }, [from, to, filterUser]);
+    if (selectedEmployeeId) {
+      const toDate = monthEnd < todayDateStr(tz) ? monthEnd : todayDateStr(tz);
+      const stats = await employeeStatsFor(selectedEmployeeId, monthStart, toDate);
+      setSelectedStats(stats);
+    }
+  }, [from, to, filterUser, selectedEmployeeId, statsMonth]);
+
+  async function onSelectEmployee(userId: string) {
+    setSelectedEmployeeId(userId);
+    setError(null);
+    try {
+      const tz = settings.timezone || DEFAULT_TIMEZONE;
+      const monthStart = `${statsMonth}-01`;
+      const monthEnd = endOfMonth(statsMonth);
+      const toDate = monthEnd < todayDateStr(tz) ? monthEnd : todayDateStr(tz);
+      const stats = await employeeStatsFor(userId, monthStart, toDate);
+      setSelectedStats(stats);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load employee stats");
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -300,7 +331,8 @@ export default function AdminPage() {
         Admin panel
       </h1>
       <p className="mt-2 text-sm text-[var(--muted)]">
-        Today&apos;s roster, reports, staff seats, timings, holidays, leave, and office IP settings.
+        Admin works from anywhere. Staff dashboard is office-LAN only. Checkout before 3:00pm is
+        blocked; 3:00–3:59pm = half leave.
       </p>
 
       {error ? (
@@ -313,6 +345,89 @@ export default function AdminPage() {
           {message}
         </p>
       ) : null}
+
+      <section className="panel mt-8 rounded-2xl p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-lg font-semibold">Employees — one click</h2>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              Tap a person to see leaves, late days, days present, and half leaves.
+            </p>
+          </div>
+          <label className="text-sm">
+            Month
+            <input
+              type="month"
+              value={statsMonth}
+              onChange={async (e) => {
+                setStatsMonth(e.target.value);
+                if (selectedEmployeeId) {
+                  // refresh will pick up new month via effect dependency
+                }
+              }}
+              className="mt-1 block rounded-lg border border-[var(--line)] px-3 py-2"
+            />
+          </label>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {staff
+            .filter((s) => s.active)
+            .map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => onSelectEmployee(s.id)}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                  selectedEmployeeId === s.id
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                    : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--accent)]"
+                }`}
+              >
+                {s.fullName}
+              </button>
+            ))}
+        </div>
+        {selectedStats ? (
+          <div className="mt-5 rounded-2xl border border-[var(--accent)]/25 bg-[var(--accent)]/5 p-5">
+            <h3 className="font-display text-xl font-semibold">{selectedStats.userName}</h3>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              {GROUP_LABELS[selectedStats.staffGroup]} · {statsMonth}
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-xl border border-[var(--line)] bg-white px-3 py-3">
+                <p className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
+                  Days present
+                </p>
+                <p className="mt-1 text-2xl font-semibold">{selectedStats.daysPresent}</p>
+              </div>
+              <div className="rounded-xl border border-[var(--line)] bg-white px-3 py-3">
+                <p className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
+                  Late coming
+                </p>
+                <p className="mt-1 text-2xl font-semibold">{selectedStats.lateDays}</p>
+              </div>
+              <div className="rounded-xl border border-[var(--line)] bg-white px-3 py-3">
+                <p className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
+                  Half leaves
+                </p>
+                <p className="mt-1 text-2xl font-semibold">{selectedStats.halfLeaves}</p>
+              </div>
+              <div className="rounded-xl border border-[var(--line)] bg-white px-3 py-3">
+                <p className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
+                  Personal leaves
+                </p>
+                <p className="mt-1 text-2xl font-semibold">{selectedStats.personalLeaves}</p>
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-[var(--muted)]">
+              Also: absent {selectedStats.absentDays} · missing checkout{" "}
+              {selectedStats.missingCheckoutDays}
+            </p>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-[var(--muted)]">Select an employee above.</p>
+        )}
+      </section>
 
       <section className="panel mt-8 rounded-2xl p-6">
         <h2 className="font-display text-lg font-semibold">Today overview</h2>
@@ -351,11 +466,11 @@ export default function AdminPage() {
                   : row.onLeave
                     ? "On leave"
                     : row.checkedIn
-                      ? `${row.punchStatus.replace("_", " ")}${
+                      ? `${row.punchStatus.replaceAll("_", " ")}${
                           row.checkInAt
                             ? ` · ${formatClock(row.checkInAt, settings.timezone)}`
                             : ""
-                        }${row.checkedOut ? " · out" : ""}`
+                        }${row.checkedOut ? " · out" : " · still in"}`
                       : "Absent"}
               </span>
             </li>
@@ -530,6 +645,12 @@ export default function AdminPage() {
 
       <section className="panel mt-8 rounded-2xl p-6">
         <h2 className="font-display text-lg font-semibold">Settings</h2>
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Recommended: host on an <strong>office PC</strong> so staff use LAN (
+          <code>192.168.x.x</code>). Router public-IP changes after reboot then do not matter.
+          <code>.htaccess</code> already allows LAN for staff and <code>/admin</code> +{" "}
+          <code>/login</code> from anywhere. See <code>ARCHITECTURE.md</code>.
+        </p>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="text-sm">
             Office timezone
@@ -541,19 +662,19 @@ export default function AdminPage() {
             />
           </label>
           <label className="text-sm">
-            Allowed office public IP(s)
+            Extra public IPs (optional backup)
             <textarea
               value={ipDraft}
               onChange={(e) => setIpDraft(e.target.value)}
               rows={3}
-              placeholder={"203.0.113.45\n203.0.113.46"}
+              placeholder={"Only if not using office LAN hosting"}
               className="mt-1 w-full rounded-lg border border-[var(--line)] px-3 py-2 font-mono text-xs"
             />
           </label>
         </div>
         <p className="mt-3 text-xs text-[var(--muted)]">
-          Hostinger static hosting enforces IP via <code>.htaccess</code> (not browser JS). Save
-          IPs here, then paste this snippet into <code>public_html/attendance/.htaccess</code>:
+          Optional public-IP snippet (LAN ranges are already in the shipped{" "}
+          <code>.htaccess</code>):
         </p>
         <pre className="mt-2 overflow-x-auto rounded-lg border border-[var(--line)] bg-slate-950 p-3 text-xs text-slate-100">
           {htaccessSnippet(

@@ -1,9 +1,9 @@
 import { listEvents } from "./attendance";
-import { daysAgo, todayDateStr } from "./dates";
+import { daysAgo, monthKey, todayDateStr } from "./dates";
 import { listLeaves } from "./leave";
 import { getAppSettings, listHolidays, listStaffProfiles, listTimings } from "./settings";
 import { buildDayRows, toCsv } from "./status";
-import type { DayAttendanceRow } from "./types";
+import type { DayAttendanceRow, EmployeePeriodStats } from "./types";
 import { DEFAULT_TIMEZONE } from "./types";
 
 export async function attendanceReport(opts?: {
@@ -52,4 +52,55 @@ export function downloadCsv(filename: string, csv: string) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+export async function employeeStats(opts?: {
+  from?: string;
+  to?: string;
+  userId?: string;
+}): Promise<EmployeePeriodStats[]> {
+  const settings = await getAppSettings();
+  const tz = settings.timezone || DEFAULT_TIMEZONE;
+  const to = opts?.to || todayDateStr(tz);
+  const from = opts?.from || `${monthKey(to)}-01`;
+  const [rows, leaves, profiles] = await Promise.all([
+    attendanceReport({ from, to, userId: opts?.userId }),
+    listLeaves(opts?.userId),
+    listStaffProfiles(),
+  ]);
+
+  const target = opts?.userId
+    ? profiles.filter((p) => p.id === opts.userId)
+    : profiles.filter((p) => p.active && p.role === "staff");
+
+  return target.map((profile) => {
+    const mine = rows.filter((r) => r.userId === profile.id);
+    const personalLeaves = leaves.filter(
+      (l) =>
+        l.userId === profile.id &&
+        l.status === "approved" &&
+        l.date >= from &&
+        l.date <= to,
+    ).length;
+    return {
+      userId: profile.id,
+      userName: profile.fullName,
+      staffGroup: profile.staffGroup,
+      daysPresent: mine.filter((r) => Boolean(r.checkInAt) && r.status !== "holiday").length,
+      lateDays: mine.filter((r) => r.wasLate).length,
+      halfLeaves: mine.filter((r) => r.halfLeave || r.status === "half_leave").length,
+      personalLeaves,
+      absentDays: mine.filter((r) => r.status === "absent").length,
+      missingCheckoutDays: mine.filter((r) => r.status === "missing_checkout").length,
+    };
+  });
+}
+
+export async function employeeStatsFor(
+  userId: string,
+  from?: string,
+  to?: string,
+): Promise<EmployeePeriodStats | null> {
+  const list = await employeeStats({ userId, from, to });
+  return list[0] ?? null;
 }

@@ -1,44 +1,38 @@
-# Office IP allowlist (attendance only)
+# Office access (LAN) + admin from anywhere
 
-`attendance.teqnowebs.com` is locked to your **office public IP**.  
-`teqnowebs.com` stays open worldwide — do not add IP rules to the main site `.htaccess`.
+## Problem: router gets a new public IP
 
-Wrong network → **403** “Office network only” page (login is not shown).
+After the office router turns off/on, the **ISP public IP** often changes. Allowlisting that public IP means attendance breaks until you update the list.
 
-## Where to edit
+## Solution (chosen): host on the office LAN
 
-File: [`public/.htaccess`](public/.htaccess)
+Run the attendance app on a PC/server **inside the office**. Staff open:
 
-```apache
-Require ip REPLACE_WITH_OFFICE_PUBLIC_IP
-# Require ip SECOND_IP_IF_NEEDED
-```
+`http://192.168.x.x:3001/` (example)
 
-Replace `REPLACE_WITH_OFFICE_PUBLIC_IP` with a real IPv4 address, for example:
+The server sees private IPs like `192.168.1.50`, not the ISP IP — **reboot-safe**.
 
-```apache
-Require ip 203.0.113.10
-```
+Shipped [`public/.htaccess`](public/.htaccess) allows:
 
-You can edit this:
+- `192.168.0.0/16`
+- `10.0.0.0/8`
+- `172.16.0.0/12`
+- `127.0.0.1` (local test)
 
-1. In the repo before `npm run build`, or  
-2. Directly on Hostinger in `public_html/attendance/.htaccess` after upload, or  
-3. Save IPs in **Admin → Settings**, copy the generated snippet, paste into Hostinger `.htaccess`.
+## Admin from anywhere
 
-Support **1 IP now**; add a second `Require ip` line only if you have a backup ISP.
+Same `.htaccess` also allows **from the public internet**:
 
-## How to find the office public IP
+- `/admin/`
+- `/login/`
+- `/_next/` (assets)
 
-1. Connect a phone or laptop to office Wi‑Fi (`TQwebs` or `TQwebs 5G`).
-2. Open [https://whatismyip.com](https://whatismyip.com) (or similar).
-3. Copy the IPv4 address shown.
-4. Paste it into the `Require ip` line.
+Staff `/dashboard/` stays **LAN-only**. Off-network staff get the 403 page.
 
-Both SSIDs usually share the **same** public IP (same router/ISP). Use a second `Require ip` line only if you confirm a different IP.
+## Optional: still use a public IP
 
-## Important
+Only if you host on Hostinger (public internet) instead of an office PC — then add `Require ip YOUR_PUBLIC_IP` and update it when the ISP changes. Prefer LAN hosting.
 
-- This is **public IP** access, not “only this SSID name”. Anyone on that office internet connection can open the attendance site (they still need a staff login).
-- If the ISP changes your office IP, update `.htaccess` again.
-- Staff off-site (home/mobile data) will see the 403 “Office network only” page unless they use an office VPN that exits via the office IP.
+## See also
+
+[`ARCHITECTURE.md`](ARCHITECTURE.md)
