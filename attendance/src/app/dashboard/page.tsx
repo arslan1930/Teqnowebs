@@ -12,28 +12,20 @@ import {
   logout,
   markAttendance,
 } from "@/lib/attendance";
-import { formatTimeLabel, todayDateStr } from "@/lib/dates";
+import { daysAgo, formatClock, formatTimeLabel, formatWhen, todayDateStr } from "@/lib/dates";
 import { approvedLeavesThisMonth, listLeaves, requestLeave } from "@/lib/leave";
-import { getTimingForGroup, listHolidays } from "@/lib/settings";
+import { getAppSettings, getTimingForGroup, listHolidays } from "@/lib/settings";
+import { attendanceReport } from "@/lib/reports";
 import { approvedLeaveOnDate, holidayOnDate } from "@/lib/status";
 import type {
   AttendanceEvent,
   CompanyHoliday,
+  DayAttendanceRow,
   LeaveRequest,
   OfficeTiming,
   StaffProfile,
 } from "@/lib/types";
-import { GROUP_LABELS } from "@/lib/types";
-
-function formatWhen(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import { DEFAULT_TIMEZONE, GROUP_LABELS } from "@/lib/types";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -42,6 +34,8 @@ export default function DashboardPage() {
   const [timing, setTiming] = useState<OfficeTiming | null>(null);
   const [holidays, setHolidays] = useState<CompanyHoliday[]>([]);
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
+  const [history, setHistory] = useState<DayAttendanceRow[]>([]);
+  const [timezone, setTimezone] = useState(DEFAULT_TIMEZONE);
   const [usedLeaves, setUsedLeaves] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<"check_in" | "check_out" | "leave" | null>(null);
@@ -51,18 +45,29 @@ export default function DashboardPage() {
   const [leaveReason, setLeaveReason] = useState("");
 
   const refresh = useCallback(async (user: StaffProfile) => {
-    const [ev, t, hol, lv, used] = await Promise.all([
+    const settings = await getAppSettings();
+    const tz = settings.timezone || DEFAULT_TIMEZONE;
+    setTimezone(tz);
+    const dateStr = todayDateStr(tz);
+    setLeaveDate((prev) => prev || dateStr);
+    const [ev, t, hol, lv, used, hist] = await Promise.all([
       listEvents(user.id),
       getTimingForGroup(user.staffGroup),
       listHolidays(),
       listLeaves(user.id),
       approvedLeavesThisMonth(user.id),
+      attendanceReport({
+        from: daysAgo(29, tz),
+        to: todayDateStr(tz),
+        userId: user.id,
+      }),
     ]);
     setEvents(ev);
     setTiming(t);
     setHolidays(hol);
     setLeaves(lv);
     setUsedLeaves(used);
+    setHistory(hist);
   }, []);
 
   useEffect(() => {
@@ -88,7 +93,7 @@ export default function DashboardPage() {
     };
   }, [router, refresh]);
 
-  const dateStr = todayDateStr();
+  const dateStr = todayDateStr(timezone);
   const holidayToday = useMemo(
     () => holidayOnDate(holidays, dateStr),
     [holidays, dateStr],
@@ -108,8 +113,10 @@ export default function DashboardPage() {
         timing,
         holidayToday,
         leaveToday,
+        timeZone: timezone,
+        dateStr,
       }),
-    [events, timing, holidayToday, leaveToday],
+    [events, timing, holidayToday, leaveToday, timezone, dateStr],
   );
 
   const attendanceBlocked = Boolean(holidayToday || leaveToday);
@@ -166,7 +173,9 @@ export default function DashboardPage() {
           ? "Holiday"
           : status.punchStatus === "on_leave"
             ? "On leave"
-            : "—";
+            : status.punchStatus === "missing_checkout"
+              ? "Missing checkout"
+              : "—";
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-3xl px-5 py-8 sm:py-12">
@@ -209,7 +218,7 @@ export default function DashboardPage() {
           {profile.fullName}
         </h1>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          {profile.email} · {GROUP_LABELS[profile.staffGroup]}
+          {profile.email} · {GROUP_LABELS[profile.staffGroup]} · {timezone}
         </p>
 
         {timing ? (
@@ -250,8 +259,25 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        <p
+          className="mt-4 rounded-lg border px-3 py-2 text-sm"
+          style={{
+            borderColor:
+              status.punchStatus === "late" || status.punchStatus === "missing_checkout"
+                ? "#f59e0b55"
+                : "var(--line)",
+            background:
+              status.punchStatus === "late" || status.punchStatus === "missing_checkout"
+                ? "#fffbeb"
+                : "#fff",
+            color: "var(--ink-soft)",
+          }}
+        >
+          {status.message}
+        </p>
+
         {attendanceBlocked ? (
-          <p className="mt-4 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--muted)]">
+          <p className="mt-3 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--muted)]">
             {holidayToday
               ? "Company holiday today — attendance not required."
               : "Approved leave today — attendance not required."}
@@ -282,7 +308,11 @@ export default function DashboardPage() {
             disabled={busy !== null || status.checkedIn || attendanceBlocked}
             onClick={() => onMark("check_in")}
           >
-            {busy === "check_in" ? "Saving…" : "Mark check-in"}
+            {busy === "check_in"
+              ? "Saving…"
+              : status.checkedIn
+                ? "Already checked in"
+                : "Mark check-in"}
           </button>
           <button
             type="button"
@@ -292,7 +322,13 @@ export default function DashboardPage() {
             }
             onClick={() => onMark("check_out")}
           >
-            {busy === "check_out" ? "Saving…" : "Mark check-out"}
+            {busy === "check_out"
+              ? "Saving…"
+              : status.checkedOut
+                ? "Already checked out"
+                : !status.checkedIn
+                  ? "Check in first"
+                  : "Mark check-out"}
           </button>
         </div>
       </section>
@@ -353,18 +389,56 @@ export default function DashboardPage() {
         ) : null}
       </section>
 
+      <section className="panel mt-8 rounded-2xl p-6 sm:p-8">
+        <h2
+          className="font-display text-lg font-semibold"
+          style={{ fontFamily: "var(--font-bricolage), system-ui, sans-serif" }}
+        >
+          My history (last 30 days)
+        </h2>
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-[var(--line)] text-[var(--muted)]">
+                <th className="py-2 pr-3">Date</th>
+                <th className="py-2 pr-3">In</th>
+                <th className="py-2 pr-3">Out</th>
+                <th className="py-2">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((row) => (
+                <tr key={row.date} className="border-b border-[var(--line)]/70">
+                  <td className="py-2 pr-3">{row.date}</td>
+                  <td className="py-2 pr-3">
+                    {row.checkInAt ? formatClock(row.checkInAt, timezone) : "—"}
+                  </td>
+                  <td className="py-2 pr-3">
+                    {row.checkOutAt ? formatClock(row.checkOutAt, timezone) : "—"}
+                  </td>
+                  <td className="py-2 capitalize">
+                    {row.status.replaceAll("_", " ")}
+                    {row.isManual ? " · edited" : ""}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section className="mt-8">
         <h2
           className="font-display text-lg font-semibold"
           style={{ fontFamily: "var(--font-bricolage), system-ui, sans-serif" }}
         >
-          Recent activity
+          Recent punches
         </h2>
         {events.length === 0 ? (
           <p className="mt-3 text-sm text-[var(--muted)]">No attendance marked yet.</p>
         ) : (
           <ul className="mt-4 space-y-3">
-            {events.map((event) => (
+            {events.slice(0, 12).map((event) => (
               <li
                 key={event.id}
                 className="panel flex items-center justify-between gap-4 rounded-xl px-4 py-3"
@@ -372,13 +446,14 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-sm font-semibold text-[var(--ink)]">
                     {event.type === "check_in" ? "Check-in" : "Check-out"}
+                    {event.isManual ? " (admin edit)" : ""}
                   </p>
                   {event.note ? (
                     <p className="mt-0.5 text-xs text-[var(--muted)]">{event.note}</p>
                   ) : null}
                 </div>
                 <time className="shrink-0 text-xs text-[var(--muted)]" dateTime={event.createdAt}>
-                  {formatWhen(event.createdAt)}
+                  {formatWhen(event.createdAt, timezone)}
                 </time>
               </li>
             ))}
