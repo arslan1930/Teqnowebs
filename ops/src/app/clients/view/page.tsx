@@ -1,7 +1,7 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { StatusPill } from "@/components/StatusPill";
 import { apiGet } from "@/lib/api-client";
@@ -9,24 +9,54 @@ import { money } from "@/lib/format";
 import { useSession } from "@/lib/use-session";
 import type { Client, LinkTask } from "@/lib/types";
 
-export default function ClientDetailPage() {
+function ClientDetailInner() {
   const { user, loading } = useSession();
-  const params = useParams<{ id: string }>();
+  const search = useSearchParams();
+  const id = search.get("id");
   const [client, setClient] = useState<Client | null>(null);
   const [tasks, setTasks] = useState<LinkTask[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user || !params.id) return;
+    if (!user || !id) return;
     (async () => {
-      const data = await apiGet<{ client: Client; tasks: LinkTask[] }>(
-        `/api/clients/${params.id}`,
-      );
-      setClient(data.client);
-      setTasks(data.tasks);
+      try {
+        const data = await apiGet<{ client: Client; tasks: LinkTask[] }>(
+          `/api/clients/${id}`,
+        );
+        setClient(data.client);
+        setTasks(data.tasks);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load");
+      }
     })();
-  }, [user, params.id]);
+  }, [user, id]);
 
-  if (loading || !user || !client) {
+  if (loading || !user) {
+    return (
+      <main className="grid min-h-screen place-items-center">
+        <p className="text-sm text-[var(--muted)]">Loading…</p>
+      </main>
+    );
+  }
+
+  if (!id) {
+    return (
+      <main className="grid min-h-screen place-items-center">
+        <p className="text-sm text-red-600">Missing client id</p>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="grid min-h-screen place-items-center">
+        <p className="text-sm text-red-600">{error}</p>
+      </main>
+    );
+  }
+
+  if (!client) {
     return (
       <main className="grid min-h-screen place-items-center">
         <p className="text-sm text-[var(--muted)]">Loading…</p>
@@ -84,5 +114,19 @@ export default function ClientDetailPage() {
         ))}
       </ul>
     </AppShell>
+  );
+}
+
+export default function ClientDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="grid min-h-screen place-items-center">
+          <p className="text-sm text-[var(--muted)]">Loading…</p>
+        </main>
+      }
+    >
+      <ClientDetailInner />
+    </Suspense>
   );
 }

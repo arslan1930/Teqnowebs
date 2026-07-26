@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
 import { apiGet, apiSend } from "@/lib/api-client";
+import { isDemoMode } from "@/lib/demo-store";
 import type { User } from "@/lib/types";
 
 export default function LoginPage() {
@@ -65,6 +66,12 @@ export default function LoginPage() {
           Seed password <strong>ops123</strong> — admin@teqnowebs.com · linker@teqnowebs.com ·
           outreach@teqnowebs.com
         </p>
+        {isDemoMode() ? (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+            Browser demo mode — data stays in this browser only. For a shared office database, run
+            Ops with Node on a VPS / office PC (see README).
+          </p>
+        ) : null}
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <label className="block text-sm">
             Email

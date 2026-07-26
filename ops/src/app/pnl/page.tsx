@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { apiGet, apiSend } from "@/lib/api-client";
+import { apiGet, apiSend, downloadPnLCsv } from "@/lib/api-client";
 import { currentMonth, money } from "@/lib/format";
 import { useSession } from "@/lib/use-session";
 import type { Expense, MonthPnL } from "@/lib/types";
@@ -59,12 +59,19 @@ export default function PnLPage() {
             onChange={(e) => setMonth(e.target.value)}
             className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm"
           />
-          <a
-            href={`/api/pnl?month=${month}&format=csv`}
+          <button
+            type="button"
             className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium"
+            onClick={async () => {
+              try {
+                await downloadPnLCsv(month);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Export failed");
+              }
+            }}
           >
             Export CSV
-          </a>
+          </button>
         </div>
       </div>
 

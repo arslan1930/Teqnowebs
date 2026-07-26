@@ -1,6 +1,8 @@
 import { dbListExpenses, dbListTasks, dbListUsers } from "./db";
 import type { MonthPnL } from "./types";
 
+export { pnlToCsv } from "./pnl-csv";
+
 export function computeMonthPnL(month: string): MonthPnL {
   const tasks = dbListTasks({ month });
   const billable = tasks.filter((t) => t.status === "published" || t.status === "live");
@@ -49,16 +51,3 @@ export function computeMonthPnL(month: string): MonthPnL {
   };
 }
 
-export function pnlToCsv(pnl: MonthPnL): string {
-  const lines = [
-    "section,name,revenue,cost,profit_or_count",
-    `summary,${pnl.month},${pnl.revenue},${pnl.taskCosts + pnl.expenses},${pnl.profit}`,
-    ...pnl.byClient.map(
-      (c) => `client,"${c.clientName}",${c.revenue},${c.cost},${c.profit}`,
-    ),
-    ...pnl.byStaff.map(
-      (s) => `staff,"${s.userName}",${s.revenue},${s.cost},${s.publishedCount}`,
-    ),
-  ];
-  return lines.join("\n");
-}

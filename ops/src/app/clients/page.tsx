@@ -106,7 +106,7 @@ export default function ClientsPage() {
         {clients.map((c) => (
           <li key={c.id}>
             <Link
-              href={`/clients/${c.id}`}
+              href={`/clients/view?id=${encodeURIComponent(c.id)}`}
               className="panel flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm"
             >
               <div>

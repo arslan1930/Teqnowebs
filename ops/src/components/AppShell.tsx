@@ -52,7 +52,9 @@ export function AppShell({
       </header>
       <nav className="mt-6 flex flex-wrap gap-2">
         {links.map((l) => {
-          const active = pathname === l.href || pathname.startsWith(l.href + "/");
+          const path = (pathname || "/").replace(/\/$/, "") || "/";
+          const href = l.href.replace(/\/$/, "") || "/";
+          const active = path === href || path.startsWith(href + "/");
           return (
             <Link
               key={l.href}
