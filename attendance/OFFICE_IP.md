@@ -3,6 +3,8 @@
 `attendance.teqnowebs.com` is locked to your **office public IP**.  
 `teqnowebs.com` stays open worldwide — do not add IP rules to the main site `.htaccess`.
 
+Wrong network → **403** “Office network only” page (login is not shown).
+
 ## Where to edit
 
 File: [`public/.htaccess`](public/.htaccess)
@@ -21,7 +23,10 @@ Require ip 203.0.113.10
 You can edit this:
 
 1. In the repo before `npm run build`, or  
-2. Directly on Hostinger in `public_html/attendance/.htaccess` after upload.
+2. Directly on Hostinger in `public_html/attendance/.htaccess` after upload, or  
+3. Save IPs in **Admin → Settings**, copy the generated snippet, paste into Hostinger `.htaccess`.
+
+Support **1 IP now**; add a second `Require ip` line only if you have a backup ISP.
 
 ## How to find the office public IP
 
