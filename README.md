@@ -35,6 +35,12 @@ Examples: `/contact/`, `/about/`, `/services/`, `/software/`, `/blog/`.
 - `npx serve out` — preview the static export (`npm start` is not used with `output: "export"`)
 - `npm run sanity` — local Sanity Studio
 - `npm run sanity:deploy` — host Studio on `*.sanity.studio`
+- `npm run attendance:dev` — staff attendance app (subdomain)
+- `npm run attendance:build` — build attendance static export (`attendance/out/`)
+
+## Attendance subdomain (`attendance.teqnowebs.com`)
+
+Separate staff login + check-in/out app in [`attendance/`](attendance/). See [`attendance/README.md`](attendance/README.md) for Supabase setup and Hostinger subdomain deploy into `public_html/attendance/`.
 
 ## Blog & team (Sanity)
 

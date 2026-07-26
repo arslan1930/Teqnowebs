@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "sanity": "sanity dev",
-    "sanity:deploy": "sanity deploy"
+    "sanity:deploy": "sanity deploy",
+    "attendance:dev": "npm run dev --prefix attendance",
+    "attendance:build": "npm run build --prefix attendance"
   },
   "dependencies": {
     "@portabletext/react": "^7.0.1",
