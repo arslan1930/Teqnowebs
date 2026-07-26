@@ -1,54 +1,55 @@
-# Teqnowebs (Laravel)
+# Teqnowebs — plain PHP (Hostinger)
 
-Agency marketing site for Hostinger: pages, blog, contact inquiries, staff hub, and simple admin.
+No Laravel. No Composer. No Node build for the marketing site.
 
 ## Local
 
 ```bash
-cd site
-cp .env.example .env   # or use SQLite for local
-composer install
-php artisan key:generate
-touch database/database.sqlite   # if using sqlite
-php artisan migrate --seed
-npm install && npm run build
-php artisan serve
+cd site/public
+php -S 127.0.0.1:8080
 ```
 
-Open http://127.0.0.1:8000/
+Open http://127.0.0.1:8080/
+
+SQLite DB auto-creates at `site/storage/teqnowebs.sqlite` on first visit.
 
 ### Seed logins (password `teqnowebs123`)
 
 | Email | Access |
 |-------|--------|
 | `admin@teqnowebs.com` | Staff hub + `/admin` |
-| `staff@teqnowebs.com` | Staff hub only |
+| `staff@teqnowebs.com` | Staff hub |
 
-## Hostinger deploy
+## Hostinger (MySQL)
 
-1. Create a MySQL database in hPanel.
-2. Upload the contents of the deploy zip (full Laravel app) to the server.
-3. Point the domain **document root** to the app’s `public/` folder.
-4. Copy `.env.example` → `.env`, set `APP_URL`, MySQL credentials, run:
+1. Upload the project so **document root** = `public/`
+2. Copy `config.local.example.php` → `config.local.php` (one level above `public/`)
+3. Set MySQL credentials + `app_url`
+4. Visit the site — tables + seed users are created automatically
 
-```bash
-php artisan key:generate
-php artisan migrate --seed --force
-php artisan storage:link
-php artisan config:cache
+```php
+// config.local.php
+return [
+  'app_url' => 'https://teqnowebs.com',
+  'db_driver' => 'mysql',
+  'mysql' => [
+    'host' => 'localhost',
+    'port' => '3306',
+    'database' => 'YOUR_DB',
+    'username' => 'YOUR_USER',
+    'password' => 'YOUR_PASS',
+    'charset' => 'utf8mb4',
+  ],
+];
 ```
 
-5. Ensure `storage/` and `bootstrap/cache/` are writable.
+Make `storage/` writable by PHP.
 
-### Subdomain tools (unchanged)
+## Routes
 
-| Tool | URL |
-|------|-----|
-| Attendance | `https://attendance.teqnowebs.com` |
-| Ops / Link Desk | `https://ops.teqnowebs.com` |
+`/` · `/services` · `/software` · `/about` · `/contact` · `/blog` · `/login` · `/staff` · `/admin`
 
-Staff hub: `/staff` after login. Admin: `/admin`.
+## Staff tools (subdomains)
 
-## Pages
-
-`/` · `/services` · `/software` · `/about` · `/contact` · `/blog` · `/staff` · `/admin`
+- Attendance → `https://attendance.teqnowebs.com`
+- Ops → `https://ops.teqnowebs.com`

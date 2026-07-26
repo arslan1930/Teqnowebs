@@ -2,39 +2,25 @@
 
 | App | Path | URL | Stack |
 |-----|------|-----|--------|
-| **Marketing site** | [`site/`](site/) | `https://teqnowebs.com` | **Laravel + MySQL** (Hostinger) |
+| **Marketing site** | [`site/`](site/) | `https://teqnowebs.com` | **Plain PHP** + MySQL/SQLite (Hostinger) |
 | Attendance | [`attendance/`](attendance/) | `https://attendance.teqnowebs.com` | Next.js |
 | Ops / Link Desk | [`ops/`](ops/) | `https://ops.teqnowebs.com` | Next.js + SQLite |
 
-## Marketing site (Laravel)
+## Marketing site (plain PHP)
 
 ```bash
-cd site
-composer install
-cp .env.example .env && php artisan key:generate
-# SQLite local: set DB_CONNECTION=sqlite and touch database/database.sqlite
-php artisan migrate --seed
-npm install && npm run build
-php artisan serve
+cd site/public && php -S 127.0.0.1:8080
 ```
 
-**Hostinger zip:** [`deploy/teqnowebs-laravel.zip`](deploy/teqnowebs-laravel.zip)  
-Document root must point at Laravel `public/`. See [`site/README.md`](site/README.md).
+**Hostinger zip:** [`deploy/teqnowebs-php.zip`](deploy/teqnowebs-php.zip)  
+Document root → `public/`. See [`site/README.md`](site/README.md) and `DEPLOY.txt` inside the zip.
 
-Seed admin: `admin@teqnowebs.com` / `teqnowebs123`
+Seed: `admin@teqnowebs.com` / `teqnowebs123`
 
-## Attendance
+## Attendance & Ops
 
-See [`attendance/README.md`](attendance/). Deploy under `public_html/attendance/` or subdomain root. Office IP allowlist for staff punches.
+Keep deploying on their subdomains. After PHP site login, **`/staff`** links to both tools.
 
-## Ops / Link Desk
+## Note
 
-See [`ops/README.md`](ops/). Shared team DB needs Node on port 3002 (not static Hostinger). Demo zip: `deploy/teqnowebs-ops.zip`.
-
-## Staff integration
-
-After Laravel login → **`/staff`** links to Attendance and Ops subdomains. Site content admin at **`/admin`**.
-
-## Legacy Next.js marketing export
-
-The previous static Next.js marketing files at the repo root are superseded by [`site/`](site/). Prefer Laravel for new deploys.
+Laravel was removed from this project in favor of plain PHP for simpler Hostinger hosting (no Composer required on the server).
