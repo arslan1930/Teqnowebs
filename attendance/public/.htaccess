@@ -1,20 +1,31 @@
-# attendance.teqnowebs.com → public_html/attendance
-# Office-network only. Main site (teqnowebs.com) stays public — do NOT copy this IP block there.
+# Teqnowebs Attendance — office LAN for staff; admin/login from anywhere
+# Recommended: host on an office PC/server so staff use http://192.168.x.x/
+# Public ISP IP changes after router reboot then do not matter.
 DirectoryIndex index.html index.htm
 ErrorDocument 403 /403.html
 
 Options -Indexes +FollowSymLinks
 
-# ---------------------------------------------------------------------------
-# OFFICE IP ALLOWLIST
-# Replace REPLACE_WITH_OFFICE_PUBLIC_IP with your office public IP
-# (on TQwebs / TQwebs 5G Wi‑Fi, open https://whatismyip.com).
-# Add another "Require ip ..." line if you have a second office IP.
-# See OFFICE_IP.md in the attendance app folder.
-# ---------------------------------------------------------------------------
+# Paths admin may open from home/mobile (same app, same DB)
+SetEnvIf Request_URI "^/admin(/|$)" ALLOW_REMOTE_ADMIN
+SetEnvIf Request_URI "^/login(/|$)" ALLOW_REMOTE_ADMIN
+SetEnvIf Request_URI "^/_next/" ALLOW_REMOTE_ADMIN
+SetEnvIf Request_URI "^/403\.html$" ALLOW_REMOTE_ADMIN
+SetEnvIf Request_URI "^/favicon" ALLOW_REMOTE_ADMIN
+
+# Staff dashboard + home: office private LAN only
 <IfModule mod_authz_core.c>
-  Require ip REPLACE_WITH_OFFICE_PUBLIC_IP
-  # Require ip SECOND_IP_IF_NEEDED
+  <RequireAny>
+    # Office LAN (reboot-safe — not the ISP public IP)
+    Require ip 192.168.0.0/16
+    Require ip 10.0.0.0/8
+    Require ip 172.16.0.0/12
+    # Loopback for local testing on the host machine
+    Require ip 127.0.0.1
+    Require ip ::1
+    # Admin / login / assets from anywhere
+    Require env ALLOW_REMOTE_ADMIN
+  </RequireAny>
 </IfModule>
 
 <IfModule mod_rewrite.c>
