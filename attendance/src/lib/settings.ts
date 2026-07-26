@@ -1,15 +1,5 @@
-import {
-  demoAddHoliday,
-  demoGetSettings,
-  demoListHolidays,
-  demoListProfiles,
-  demoListTimings,
-  demoRemoveHoliday,
-  demoSaveSettings,
-  demoSaveTiming,
-  demoUpdateProfile,
-} from "./demo-store";
-import { hasSupabaseConfig } from "./config";
+import { apiGet, apiSend } from "./api-client";
+import { hasSupabaseConfig, useLocalDb } from "./config";
 import { getSupabase } from "./supabase";
 import type {
   AppSettings,
@@ -51,16 +41,24 @@ function mapHoliday(row: Record<string, unknown>): CompanyHoliday {
 }
 
 export async function listTimings(): Promise<OfficeTiming[]> {
-  if (!hasSupabaseConfig) return demoListTimings();
+  if (useLocalDb) {
+    const { timings } = await apiGet<{ timings: OfficeTiming[] }>("/api/timings");
+    return timings;
+  }
   const supabase = getSupabase();
-  if (!supabase) return demoListTimings();
+  if (!supabase) return [];
   const { data, error } = await supabase.from("office_timings").select("*");
   if (error) throw new Error(error.message);
   return (data || []).map((r) => mapTiming(r as Record<string, unknown>));
 }
 
 export async function saveTiming(timing: OfficeTiming): Promise<OfficeTiming> {
-  if (!hasSupabaseConfig) return demoSaveTiming(timing);
+  if (useLocalDb) {
+    const { timing: saved } = await apiSend<{ timing: OfficeTiming }>("/api/timings", "PUT", {
+      timing,
+    });
+    return saved;
+  }
   const supabase = getSupabase();
   if (!supabase) throw new Error("Supabase is not configured");
   const { error } = await supabase.from("office_timings").upsert({
@@ -74,7 +72,10 @@ export async function saveTiming(timing: OfficeTiming): Promise<OfficeTiming> {
 }
 
 export async function listHolidays(): Promise<CompanyHoliday[]> {
-  if (!hasSupabaseConfig) return demoListHolidays();
+  if (useLocalDb) {
+    const { holidays } = await apiGet<{ holidays: CompanyHoliday[] }>("/api/holidays");
+    return holidays;
+  }
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -90,37 +91,26 @@ export async function addHoliday(input: {
   title: string;
   note?: string;
 }): Promise<CompanyHoliday> {
-  if (!hasSupabaseConfig) return demoAddHoliday(input);
-  const supabase = getSupabase();
-  if (!supabase) throw new Error("Supabase is not configured");
-  const { data: userData } = await supabase.auth.getUser();
-  const { data, error } = await supabase
-    .from("company_holidays")
-    .insert({
-      holiday_date: input.date,
-      title: input.title,
-      note: input.note || null,
-      created_by: userData.user?.id ?? null,
-    })
-    .select("*")
-    .single();
-  if (error || !data) throw new Error(error?.message || "Could not add holiday");
-  return mapHoliday(data as Record<string, unknown>);
+  if (useLocalDb) {
+    const { holiday } = await apiSend<{ holiday: CompanyHoliday }>("/api/holidays", "POST", input);
+    return holiday;
+  }
+  throw new Error("Local DB required");
 }
 
 export async function removeHoliday(id: string): Promise<void> {
-  if (!hasSupabaseConfig) {
-    demoRemoveHoliday(id);
+  if (useLocalDb) {
+    await apiSend("/api/holidays", "POST", { action: "remove", id });
     return;
   }
-  const supabase = getSupabase();
-  if (!supabase) throw new Error("Supabase is not configured");
-  const { error } = await supabase.from("company_holidays").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  throw new Error("Local DB required");
 }
 
 export async function listStaffProfiles(): Promise<StaffProfile[]> {
-  if (!hasSupabaseConfig) return demoListProfiles();
+  if (useLocalDb) {
+    const { staff } = await apiGet<{ staff: StaffProfile[] }>("/api/staff");
+    return staff;
+  }
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -135,22 +125,15 @@ export async function updateStaffProfile(
   userId: string,
   patch: Partial<Pick<StaffProfile, "role" | "staffGroup" | "fullName" | "active">>,
 ): Promise<StaffProfile> {
-  if (!hasSupabaseConfig) return demoUpdateProfile(userId, patch);
-  const supabase = getSupabase();
-  if (!supabase) throw new Error("Supabase is not configured");
-  const payload: Record<string, unknown> = {};
-  if (patch.role) payload.role = patch.role;
-  if (patch.staffGroup) payload.staff_group = patch.staffGroup;
-  if (patch.fullName) payload.full_name = patch.fullName;
-  if (typeof patch.active === "boolean") payload.active = patch.active;
-  const { data, error } = await supabase
-    .from("staff_profiles")
-    .update(payload)
-    .eq("user_id", userId)
-    .select("*")
-    .single();
-  if (error || !data) throw new Error(error?.message || "Could not update profile");
-  return mapProfile(data as Record<string, unknown>);
+  if (useLocalDb) {
+    const { profile } = await apiSend<{ profile: StaffProfile }>(
+      `/api/staff/${userId}`,
+      "PATCH",
+      patch,
+    );
+    return profile;
+  }
+  throw new Error("Local DB required");
 }
 
 export async function getTimingForGroup(group: StaffGroup): Promise<OfficeTiming | null> {
@@ -159,18 +142,11 @@ export async function getTimingForGroup(group: StaffGroup): Promise<OfficeTiming
 }
 
 export async function getAppSettings(): Promise<AppSettings> {
-  if (!hasSupabaseConfig) return demoGetSettings();
-  const supabase = getSupabase();
-  if (!supabase) return demoGetSettings();
-  const { data, error } = await supabase.from("app_settings").select("*").eq("id", 1).maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) {
-    return { timezone: DEFAULT_TIMEZONE, allowedIps: [] };
+  if (useLocalDb) {
+    const { settings } = await apiGet<{ settings: AppSettings }>("/api/settings");
+    return settings;
   }
-  return {
-    timezone: (data.timezone as string) || DEFAULT_TIMEZONE,
-    allowedIps: Array.isArray(data.allowed_ips) ? (data.allowed_ips as string[]) : [],
-  };
+  return { timezone: DEFAULT_TIMEZONE, allowedIps: [] };
 }
 
 export async function saveAppSettings(settings: AppSettings): Promise<AppSettings> {
@@ -178,23 +154,23 @@ export async function saveAppSettings(settings: AppSettings): Promise<AppSetting
     timezone: settings.timezone.trim() || DEFAULT_TIMEZONE,
     allowedIps: settings.allowedIps.map((ip) => ip.trim()).filter(Boolean),
   };
-  if (!hasSupabaseConfig) return demoSaveSettings(cleaned);
-  const supabase = getSupabase();
-  if (!supabase) throw new Error("Supabase is not configured");
-  const { error } = await supabase.from("app_settings").upsert({
-    id: 1,
-    timezone: cleaned.timezone,
-    allowed_ips: cleaned.allowedIps,
-    updated_at: new Date().toISOString(),
-  });
-  if (error) throw new Error(error.message);
+  if (useLocalDb) {
+    const { settings: saved } = await apiSend<{ settings: AppSettings }>(
+      "/api/settings",
+      "PUT",
+      { settings: cleaned },
+    );
+    return saved;
+  }
   return cleaned;
 }
 
 export function htaccessSnippet(allowedIps: string[]): string {
-  const ips = allowedIps.length ? allowedIps : ["REPLACE_WITH_OFFICE_PUBLIC_IP"];
+  const ips = allowedIps.length ? allowedIps : ["192.168.0.0/16"];
   const lines = ips.map((ip) => `  Require ip ${ip}`);
   return `<IfModule mod_authz_core.c>
 ${lines.join("\n")}
 </IfModule>`;
 }
+
+void hasSupabaseConfig;

@@ -1,52 +1,22 @@
-import {
-  demoGetProfile,
-  demoGetSettings,
-  demoListEvents,
-  demoLogin,
-  demoLogout,
-  demoMark,
-  demoListProfiles,
-  demoUpsertDayAttendance,
-  demoAddStaff,
-  demoResetPassword,
-} from "./demo-store";
-import { hasSupabaseConfig } from "./config";
-import { minutesSinceMidnightInTz, partsInTz, todayDateStr } from "./dates";
+import { apiGet, apiSend } from "./api-client";
+import { hasSupabaseConfig, useLocalDb } from "./config";
+import { partsInTz, todayDateStr } from "./dates";
 import { listLeaves } from "./leave";
-import { checkoutBlockedReason, isHalfLeaveCheckout } from "./rules";
-import {
-  getAppSettings,
-  getTimingForGroup,
-  listHolidays,
-  listStaffProfiles,
-} from "./settings";
+import { getAppSettings, getTimingForGroup, listHolidays, listStaffProfiles } from "./settings";
 import { approvedLeaveOnDate, getDayStatus, holidayOnDate } from "./status";
 import { getSupabase } from "./supabase";
 import type {
   AttendanceEvent,
   AttendanceEventType,
   RosterRow,
+  StaffGroup,
   StaffProfile,
   StaffRole,
-  StaffGroup,
 } from "./types";
 import { DEFAULT_TIMEZONE } from "./types";
 
 export { getDayStatus } from "./status";
-export { hasSupabaseConfig };
-
-async function fetchPublicIp(): Promise<string | null> {
-  try {
-    const res = await fetch("https://api.ipify.org?format=json", {
-      signal: AbortSignal.timeout(2500),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { ip?: string };
-    return data.ip || null;
-  } catch {
-    return null;
-  }
-}
+export { hasSupabaseConfig, useLocalDb };
 
 function mapEvent(row: Record<string, unknown>): AttendanceEvent {
   return {
@@ -90,8 +60,10 @@ async function fetchProfileRow(userId: string, email: string, fallbackName: stri
 }
 
 export async function getSessionProfile(): Promise<StaffProfile | null> {
-  if (!hasSupabaseConfig) return demoGetProfile();
-
+  if (useLocalDb) {
+    const { profile } = await apiGet<{ profile: StaffProfile | null }>("/api/auth/me");
+    return profile;
+  }
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase.auth.getUser();
@@ -110,13 +82,17 @@ export async function getSessionProfile(): Promise<StaffProfile | null> {
 }
 
 export async function login(email: string, password: string): Promise<StaffProfile> {
-  if (!hasSupabaseConfig) return demoLogin(email, password);
-
+  if (useLocalDb) {
+    const { profile } = await apiSend<{ profile: StaffProfile }>("/api/auth/login", "POST", {
+      email,
+      password,
+    });
+    return profile;
+  }
   const supabase = getSupabase();
   if (!supabase) throw new Error("Supabase is not configured");
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error || !data.user) throw new Error(error?.message || "Login failed");
-
   const fallback =
     (data.user.user_metadata?.full_name as string | undefined) ||
     email.split("@")[0] ||
@@ -131,8 +107,8 @@ export async function login(email: string, password: string): Promise<StaffProfi
 }
 
 export async function logout(): Promise<void> {
-  if (!hasSupabaseConfig) {
-    demoLogout();
+  if (useLocalDb) {
+    await apiSend("/api/auth/logout", "POST");
     return;
   }
   const supabase = getSupabase();
@@ -140,8 +116,11 @@ export async function logout(): Promise<void> {
 }
 
 export async function listEvents(userId?: string): Promise<AttendanceEvent[]> {
-  if (!hasSupabaseConfig) return demoListEvents(userId);
-
+  if (useLocalDb) {
+    const q = userId ? `?userId=${encodeURIComponent(userId)}` : "";
+    const { events } = await apiGet<{ events: AttendanceEvent[] }>(`/api/events${q}`);
+    return events;
+  }
   const supabase = getSupabase();
   if (!supabase) return [];
   let query = supabase
@@ -160,65 +139,15 @@ export async function markAttendance(
   type: AttendanceEventType,
   note?: string,
 ): Promise<AttendanceEvent> {
-  const settings = hasSupabaseConfig ? await getAppSettings() : demoGetSettings();
-  const tz = settings.timezone || DEFAULT_TIMEZONE;
-  const dateStr = todayDateStr(tz);
-  const holidays = await listHolidays();
-  if (holidayOnDate(holidays, dateStr)) {
-    throw new Error("Today is a company holiday — no attendance required");
-  }
-  const leaves = await listLeaves(userId);
-  if (approvedLeaveOnDate(leaves, dateStr)) {
-    throw new Error("You are on approved leave today");
-  }
-
-  const existing = await listEvents(userId);
-  const todays = existing.filter(
-    (e) => partsInTz(new Date(e.createdAt), tz).dateStr === dateStr,
-  );
-  if (type === "check_in" && todays.some((e) => e.type === "check_in")) {
-    throw new Error("Already checked in today.");
-  }
-  if (type === "check_out") {
-    if (!todays.some((e) => e.type === "check_in")) {
-      throw new Error("Check in first before checking out.");
-    }
-    if (todays.some((e) => e.type === "check_out")) {
-      throw new Error("Already checked out today.");
-    }
-    const nowMins = minutesSinceMidnightInTz(new Date(), tz);
-    const blocked = checkoutBlockedReason(nowMins);
-    if (blocked) throw new Error(blocked);
-  }
-
-  const clientIp = await fetchPublicIp();
-  let finalNote = note || null;
-  if (type === "check_out") {
-    const nowMins = minutesSinceMidnightInTz(new Date(), tz);
-    if (isHalfLeaveCheckout(nowMins)) {
-      finalNote = finalNote
-        ? `${finalNote} · Half leave (checkout 3–4pm)`
-        : "Half leave (checkout 3–4pm)";
-    }
-  }
-
-  if (!hasSupabaseConfig) return demoMark(userId, type, finalNote || undefined, clientIp);
-
-  const supabase = getSupabase();
-  if (!supabase) throw new Error("Supabase is not configured");
-  const { data, error } = await supabase
-    .from("attendance_events")
-    .insert({
-      user_id: userId,
+  void userId;
+  if (useLocalDb) {
+    const { event } = await apiSend<{ event: AttendanceEvent }>("/api/events", "POST", {
       type,
-      note: finalNote,
-      client_ip: clientIp,
-      is_manual: false,
-    })
-    .select("id,user_id,type,created_at,note,client_ip,is_manual,edited_by")
-    .single();
-  if (error || !data) throw new Error(error?.message || "Could not mark attendance");
-  return mapEvent(data as Record<string, unknown>);
+      note,
+    });
+    return event;
+  }
+  throw new Error("Configure local SQLite server or Supabase");
 }
 
 export async function upsertDayAttendance(input: {
@@ -229,58 +158,12 @@ export async function upsertDayAttendance(input: {
   adminNote?: string;
   editedBy: string;
 }): Promise<void> {
-  if (!hasSupabaseConfig) {
-    demoUpsertDayAttendance(input);
+  void input.editedBy;
+  if (useLocalDb) {
+    await apiSend("/api/admin/manual-day", "POST", input);
     return;
   }
-  const supabase = getSupabase();
-  if (!supabase) throw new Error("Supabase is not configured");
-  const settings = await getAppSettings();
-  const tz = settings.timezone || DEFAULT_TIMEZONE;
-
-  // Remove existing events for that calendar day in office TZ (fetch then filter)
-  const { data: existing, error: listErr } = await supabase
-    .from("attendance_events")
-    .select("id,created_at")
-    .eq("user_id", input.userId);
-  if (listErr) throw new Error(listErr.message);
-  const toDelete = (existing || [])
-    .filter((e) => partsInTz(new Date(e.created_at as string), tz).dateStr === input.date)
-    .map((e) => e.id as string);
-  if (toDelete.length) {
-    const { error: delErr } = await supabase
-      .from("attendance_events")
-      .delete()
-      .in("id", toDelete);
-    if (delErr) throw new Error(delErr.message);
-  }
-
-  const note = input.adminNote?.trim() || "Manual admin edit";
-  const inserts = [];
-  if (input.checkInAt) {
-    inserts.push({
-      user_id: input.userId,
-      type: "check_in",
-      created_at: input.checkInAt,
-      note,
-      is_manual: true,
-      edited_by: input.editedBy,
-    });
-  }
-  if (input.checkOutAt) {
-    inserts.push({
-      user_id: input.userId,
-      type: "check_out",
-      created_at: input.checkOutAt,
-      note,
-      is_manual: true,
-      edited_by: input.editedBy,
-    });
-  }
-  if (inserts.length) {
-    const { error: insErr } = await supabase.from("attendance_events").insert(inserts);
-    if (insErr) throw new Error(insErr.message);
-  }
+  throw new Error("Configure local SQLite server");
 }
 
 export async function addStaffMember(input: {
@@ -290,28 +173,26 @@ export async function addStaffMember(input: {
   staffGroup: StaffGroup;
   role?: StaffRole;
 }): Promise<StaffProfile> {
-  if (!hasSupabaseConfig) return demoAddStaff(input);
-  throw new Error(
-    "On Hostinger/static deploy, create Auth users in the Supabase dashboard, then insert a staff_profiles row (or ask admin to assign role/group here).",
-  );
+  if (useLocalDb) {
+    const { profile } = await apiSend<{ profile: StaffProfile }>("/api/staff", "POST", input);
+    return profile;
+  }
+  throw new Error("Local SQLite server required to add staff");
 }
 
 export async function resetStaffPassword(userId: string, password: string): Promise<void> {
-  if (!hasSupabaseConfig) {
-    demoResetPassword(userId, password);
+  if (useLocalDb) {
+    await apiSend(`/api/staff/${userId}`, "PATCH", { password });
     return;
   }
-  throw new Error(
-    "Password resets for live users must be done in Supabase Auth (dashboard or email recovery). Static hosting cannot hold a service-role key.",
-  );
+  throw new Error("Local SQLite server required to reset password");
 }
 
 export async function buildTodayRoster(): Promise<RosterRow[]> {
-  const settings = hasSupabaseConfig ? await getAppSettings() : demoGetSettings();
+  const settings = await getAppSettings();
   const tz = settings.timezone || DEFAULT_TIMEZONE;
-  const profiles = hasSupabaseConfig
-    ? await listStaffProfiles()
-    : demoListProfiles().filter((p) => p.role === "staff" || p.role === "admin");
+  // Admins never appear on attendance roster
+  const profiles = (await listStaffProfiles()).filter((p) => p.active && p.role === "staff");
   const events = await listEvents();
   const holidays = await listHolidays();
   const leaves = await listLeaves();
@@ -319,7 +200,7 @@ export async function buildTodayRoster(): Promise<RosterRow[]> {
   const holiday = holidayOnDate(holidays, dateStr);
 
   const rows: RosterRow[] = [];
-  for (const profile of profiles.filter((p) => p.active)) {
+  for (const profile of profiles) {
     const timing = await getTimingForGroup(profile.staffGroup);
     const userEvents = events.filter((e) => e.userId === profile.id);
     const leave = approvedLeaveOnDate(

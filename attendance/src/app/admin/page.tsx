@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
+import { StatusBadge } from "@/components/StatusBadge";
+import { employeeTheme } from "@/lib/employee-ui";
 import {
   addStaffMember,
   buildTodayRoster,
@@ -304,24 +305,16 @@ export default function AdminPage() {
     <main className="mx-auto min-h-screen w-full max-w-5xl px-5 py-8 sm:py-12">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <BrandMark size="sm" />
-        <div className="flex gap-2">
-          <Link
-            href="/dashboard/"
-            className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm"
-          >
-            Staff dashboard
-          </Link>
-          <button
-            type="button"
-            className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm"
-            onClick={async () => {
-              await logout();
-              router.replace("/login/");
-            }}
-          >
-            Sign out
-          </button>
-        </div>
+        <button
+          type="button"
+          className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm"
+          onClick={async () => {
+            await logout();
+            router.replace("/login/");
+          }}
+        >
+          Sign out
+        </button>
       </header>
 
       <h1
@@ -331,8 +324,8 @@ export default function AdminPage() {
         Admin panel
       </h1>
       <p className="mt-2 text-sm text-[var(--muted)]">
-        Admin works from anywhere. Staff dashboard is office-LAN only. Checkout before 3:00pm is
-        blocked; 3:00–3:59pm = half leave.
+        You manage the office — admins do not mark attendance. Staff check-out before 3:00pm is
+        blocked; 3:00–3:59pm = half leave. Data is stored in SQLite on this server.
       </p>
 
       {error ? (
@@ -371,58 +364,80 @@ export default function AdminPage() {
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {staff
-            .filter((s) => s.active)
-            .map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => onSelectEmployee(s.id)}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                  selectedEmployeeId === s.id
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-white"
-                    : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--accent)]"
-                }`}
-              >
-                {s.fullName}
-              </button>
-            ))}
+            .filter((s) => s.active && s.role === "staff")
+            .map((s) => {
+              const theme = employeeTheme(s.id);
+              const selected = selectedEmployeeId === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => onSelectEmployee(s.id)}
+                  className="rounded-full border px-4 py-2 text-sm font-semibold transition"
+                  style={{
+                    background: selected ? theme.solid : theme.bg,
+                    borderColor: theme.border,
+                    color: selected ? "#fff" : theme.text,
+                    boxShadow: selected ? `0 8px 20px -12px ${theme.solid}` : undefined,
+                  }}
+                >
+                  {s.fullName}
+                </button>
+              );
+            })}
         </div>
         {selectedStats ? (
-          <div className="mt-5 rounded-2xl border border-[var(--accent)]/25 bg-[var(--accent)]/5 p-5">
-            <h3 className="font-display text-xl font-semibold">{selectedStats.userName}</h3>
-            <p className="mt-1 text-xs text-[var(--muted)]">
+          <div
+            className="mt-5 rounded-2xl border p-5"
+            style={{
+              background: employeeTheme(selectedStats.userId).bg,
+              borderColor: employeeTheme(selectedStats.userId).border,
+            }}
+          >
+            <h3
+              className="font-display text-xl font-semibold"
+              style={{ color: employeeTheme(selectedStats.userId).text }}
+            >
+              {selectedStats.userName}
+            </h3>
+            <p className="mt-1 text-xs" style={{ color: employeeTheme(selectedStats.userId).text }}>
               {GROUP_LABELS[selectedStats.staffGroup]} · {statsMonth}
             </p>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-xl border border-[var(--line)] bg-white px-3 py-3">
-                <p className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
-                  Days present
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-wide text-emerald-800">Days present</p>
+                <p className="mt-1 text-2xl font-semibold text-emerald-900">
+                  {selectedStats.daysPresent}
                 </p>
-                <p className="mt-1 text-2xl font-semibold">{selectedStats.daysPresent}</p>
               </div>
-              <div className="rounded-xl border border-[var(--line)] bg-white px-3 py-3">
-                <p className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
-                  Late coming
+              <div className="rounded-xl border border-orange-200 bg-orange-50 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-wide text-orange-800">Late coming</p>
+                <p className="mt-1 text-2xl font-semibold text-orange-900">
+                  {selectedStats.lateDays}
                 </p>
-                <p className="mt-1 text-2xl font-semibold">{selectedStats.lateDays}</p>
               </div>
-              <div className="rounded-xl border border-[var(--line)] bg-white px-3 py-3">
-                <p className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
-                  Half leaves
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-wide text-amber-800">Half leaves</p>
+                <p className="mt-1 text-2xl font-semibold text-amber-900">
+                  {selectedStats.halfLeaves}
                 </p>
-                <p className="mt-1 text-2xl font-semibold">{selectedStats.halfLeaves}</p>
               </div>
-              <div className="rounded-xl border border-[var(--line)] bg-white px-3 py-3">
-                <p className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
+              <div className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-wide text-violet-800">
                   Personal leaves
                 </p>
-                <p className="mt-1 text-2xl font-semibold">{selectedStats.personalLeaves}</p>
+                <p className="mt-1 text-2xl font-semibold text-violet-900">
+                  {selectedStats.personalLeaves}
+                </p>
               </div>
             </div>
-            <p className="mt-3 text-xs text-[var(--muted)]">
-              Also: absent {selectedStats.absentDays} · missing checkout{" "}
-              {selectedStats.missingCheckoutDays}
-            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <StatusBadge status="absent" />
+              <span className="text-xs text-[var(--muted)] self-center">
+                {selectedStats.absentDays} absent · {selectedStats.missingCheckoutDays} missing
+                checkout
+              </span>
+            </div>
           </div>
         ) : (
           <p className="mt-4 text-sm text-[var(--muted)]">Select an employee above.</p>
@@ -435,46 +450,68 @@ export default function AdminPage() {
           {todayDateStr(settings.timezone)} · {settings.timezone}
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
-            <p className="text-xs uppercase text-[var(--muted)]">Present</p>
-            <p className="mt-1 text-2xl font-semibold">{present}</p>
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <p className="text-xs uppercase text-emerald-800">Present</p>
+            <p className="mt-1 text-2xl font-semibold text-emerald-900">{present}</p>
           </div>
-          <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
-            <p className="text-xs uppercase text-[var(--muted)]">Late</p>
-            <p className="mt-1 text-2xl font-semibold">{late}</p>
+          <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
+            <p className="text-xs uppercase text-orange-800">Late</p>
+            <p className="mt-1 text-2xl font-semibold text-orange-900">{late}</p>
           </div>
-          <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
-            <p className="text-xs uppercase text-[var(--muted)]">Absent</p>
-            <p className="mt-1 text-2xl font-semibold">{absent}</p>
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+            <p className="text-xs uppercase text-rose-800">Absent</p>
+            <p className="mt-1 text-2xl font-semibold text-rose-900">{absent}</p>
           </div>
         </div>
         <ul className="mt-4 space-y-2">
-          {roster.map((row) => (
-            <li
-              key={row.profile.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm"
-            >
-              <span>
-                <strong>{row.profile.fullName}</strong>{" "}
-                <span className="text-[var(--muted)]">
-                  ({GROUP_LABELS[row.profile.staffGroup]})
-                </span>
-              </span>
-              <span className="capitalize text-[var(--muted)]">
-                {row.isHoliday
-                  ? "Holiday"
-                  : row.onLeave
-                    ? "On leave"
-                    : row.checkedIn
-                      ? `${row.punchStatus.replaceAll("_", " ")}${
-                          row.checkInAt
-                            ? ` · ${formatClock(row.checkInAt, settings.timezone)}`
-                            : ""
-                        }${row.checkedOut ? " · out" : " · still in"}`
-                      : "Absent"}
-              </span>
-            </li>
-          ))}
+          {roster.map((row) => {
+            const theme = employeeTheme(row.profile.id);
+            const status: typeof row.punchStatus = row.isHoliday
+              ? "holiday"
+              : row.onLeave
+                ? "on_leave"
+                : row.checkedIn
+                  ? row.punchStatus
+                  : "absent";
+            return (
+              <li
+                key={row.profile.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border px-3 py-3 text-sm"
+                style={{ background: theme.bg, borderColor: theme.border }}
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className="grid h-9 w-9 place-items-center rounded-full text-xs font-bold text-white"
+                    style={{ background: theme.solid }}
+                  >
+                    {row.profile.fullName
+                      .split(" ")
+                      .map((p) => p[0])
+                      .slice(0, 2)
+                      .join("")}
+                  </span>
+                  <div>
+                    <p className="font-semibold" style={{ color: theme.text }}>
+                      {row.profile.fullName}
+                    </p>
+                    <p className="text-xs" style={{ color: theme.text, opacity: 0.8 }}>
+                      {GROUP_LABELS[row.profile.staffGroup]}
+                      {row.checkInAt
+                        ? ` · in ${formatClock(row.checkInAt, settings.timezone)}`
+                        : ""}
+                      {row.checkedOut ? " · out" : row.checkedIn ? " · still in" : ""}
+                    </p>
+                  </div>
+                </div>
+                <StatusBadge
+                  status={status}
+                  onLeave={row.onLeave}
+                  isHoliday={row.isHoliday}
+                  checkedIn={row.checkedIn}
+                />
+              </li>
+            );
+          })}
         </ul>
       </section>
 
@@ -581,11 +618,13 @@ export default function AdminPage() {
               className="mt-1 w-full rounded-lg border border-[var(--line)] px-3 py-2"
             >
               <option value="">Select…</option>
-              {staff.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.fullName}
-                </option>
-              ))}
+              {staff
+                .filter((s) => s.role === "staff")
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.fullName}
+                  </option>
+                ))}
             </select>
           </label>
           <label className="text-sm">

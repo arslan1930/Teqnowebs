@@ -1,16 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
+import { StatusBadge } from "@/components/StatusBadge";
 import {
   getDayStatus,
   getSessionProfile,
-  hasSupabaseConfig,
   listEvents,
   logout,
   markAttendance,
+  useLocalDb,
 } from "@/lib/attendance";
 import { daysAgo, formatClock, formatTimeLabel, formatWhen, todayDateStr } from "@/lib/dates";
 import { approvedLeavesThisMonth, listLeaves, requestLeave } from "@/lib/leave";
@@ -78,6 +78,10 @@ export default function DashboardPage() {
         if (!active) return;
         if (!session) {
           router.replace("/login/");
+          return;
+        }
+        if (session.role === "admin") {
+          router.replace("/admin/");
           return;
         }
         setProfile(session);
@@ -164,32 +168,11 @@ export default function DashboardPage() {
     );
   }
 
-  const punchLabel =
-    status.punchStatus === "late"
-      ? "Late"
-      : status.punchStatus === "on_time"
-        ? "On time"
-        : status.punchStatus === "holiday"
-          ? "Holiday"
-          : status.punchStatus === "on_leave"
-            ? "On leave"
-            : status.punchStatus === "missing_checkout"
-              ? "Missing checkout"
-              : "—";
-
   return (
     <main className="mx-auto min-h-screen w-full max-w-3xl px-5 py-8 sm:py-12">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <BrandMark size="sm" />
         <div className="flex flex-wrap items-center gap-2">
-          {profile.role === "admin" ? (
-            <Link
-              href="/admin/"
-              className="rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/5 px-3 py-2 text-sm font-medium text-[var(--accent-deep)]"
-            >
-              Admin panel
-            </Link>
-          ) : null}
           <button
             type="button"
             onClick={onLogout}
@@ -228,34 +211,46 @@ export default function DashboardPage() {
           </p>
         ) : null}
 
-        {!hasSupabaseConfig ? (
-          <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            Demo mode — records stay in this browser until Supabase is connected.
+        {useLocalDb ? (
+          <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-950">
+            Saved in the office SQLite database on this server.
           </p>
         ) : null}
 
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
+          <div
+            className="rounded-xl border px-4 py-3"
+            style={{
+              background: status.checkedIn ? "#dcfce7" : "#f8fafc",
+              borderColor: status.checkedIn ? "#86efac" : "var(--line)",
+            }}
+          >
             <p className="text-xs uppercase tracking-wide text-[var(--muted)]">Check-in</p>
-            <p
-              className="mt-1 text-lg font-semibold"
-              style={{ color: status.checkedIn ? "var(--ok)" : "var(--muted)" }}
-            >
-              {status.checkedIn ? "Marked" : "Not yet"}
+            <p className="mt-1 text-lg font-semibold">
+              {status.checkedIn ? "Present" : "Not yet"}
             </p>
           </div>
-          <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
+          <div
+            className="rounded-xl border px-4 py-3"
+            style={{
+              background: status.checkedOut ? "#dbeafe" : "#f8fafc",
+              borderColor: status.checkedOut ? "#93c5fd" : "var(--line)",
+            }}
+          >
             <p className="text-xs uppercase tracking-wide text-[var(--muted)]">Check-out</p>
-            <p
-              className="mt-1 text-lg font-semibold"
-              style={{ color: status.checkedOut ? "var(--ok)" : "var(--muted)" }}
-            >
-              {status.checkedOut ? "Marked" : "Not yet"}
+            <p className="mt-1 text-lg font-semibold">
+              {status.checkedOut ? "Done" : "Pending"}
             </p>
           </div>
           <div className="rounded-xl border border-[var(--line)] bg-white px-4 py-3">
             <p className="text-xs uppercase tracking-wide text-[var(--muted)]">Status</p>
-            <p className="mt-1 text-lg font-semibold text-[var(--ink)]">{punchLabel}</p>
+            <div className="mt-2">
+              <StatusBadge
+                status={status.punchStatus}
+                checkedIn={status.checkedIn}
+                large
+              />
+            </div>
           </div>
         </div>
 
