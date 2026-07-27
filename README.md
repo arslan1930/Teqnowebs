@@ -9,13 +9,15 @@
 ## Marketing site (plain PHP)
 
 ```bash
-cd site/public && php -S 127.0.0.1:8080
+cd site && php -S 127.0.0.1:8080 router.php
 ```
 
-**Hostinger zip:** [`deploy/teqnowebs-php.zip`](deploy/teqnowebs-php.zip)  
-Document root → `public/`. See [`site/README.md`](site/README.md) and `DEPLOY.txt` inside the zip.
+**Hostinger zip:** [`deploy/teqnowebs-php.zip`](deploy/teqnowebs-php.zip)
 
-Seed: `admin@teqnowebs.com` / `teqnowebs123`
+Unzip **directly into `public_html/`** so `public_html/index.php` exists.  
+A nested `public_html/public/` folder causes Hostinger **403**.
+
+See [`site/DEPLOY.txt`](site/DEPLOY.txt). Seed: `admin@teqnowebs.com` / `teqnowebs123`
 
 ## Attendance & Ops
 

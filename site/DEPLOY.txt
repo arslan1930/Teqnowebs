@@ -1,16 +1,31 @@
-Teqnowebs plain PHP — Hostinger
-================================
-1. Unzip on the server.
-2. Point domain document root to the /public folder.
-3. Copy config.local.example.php → config.local.php
-   (place it next to config.php, NOT inside public/).
-4. Fill MySQL details + app_url.
-5. Make sure storage/ is writable.
-6. Open the site — DB tables and seed users create automatically.
+Teqnowebs plain PHP — fix 403 on Hostinger
+==========================================
+
+MOST COMMON 403 CAUSE:
+  You left files inside a nested /public folder.
+  Hostinger public_html/ then has no index.php → 403.
+
+CORRECT UPLOAD:
+  1. Empty (or backup) public_html/
+  2. Unzip so these sit DIRECTLY in public_html/:
+       index.php
+       .htaccess
+       assets/
+       app/
+       views/
+       config.php
+       storage/
+  3. public_html/index.php must exist (open File Manager and check).
+  4. Copy config.local.example.php → config.local.php
+     Set MySQL details + app_url = https://teqnowebs.com
+  5. storage/ folder permissions: 755 (or 775)
+
+WRONG (causes 403):
+  public_html/public/index.php   ← nested — do not do this
+  public_html/site/index.php
 
 Login: admin@teqnowebs.com / teqnowebs123
-Staff hub: /staff
+Staff: /staff
 Admin: /admin
 
-Attendance: https://attendance.teqnowebs.com
-Ops: https://ops.teqnowebs.com
+Attendance / Ops stay on their subdomains (linked from /staff).

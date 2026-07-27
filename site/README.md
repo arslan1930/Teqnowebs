@@ -1,55 +1,33 @@
 # Teqnowebs — plain PHP (Hostinger)
 
-No Laravel. No Composer. No Node build for the marketing site.
+No Laravel. No Composer. No Node.
 
 ## Local
 
 ```bash
-cd site/public
-php -S 127.0.0.1:8080
+cd site
+php -S 127.0.0.1:8080 router.php
 ```
 
-Open http://127.0.0.1:8080/
+## Hostinger (avoid 403)
 
-SQLite DB auto-creates at `site/storage/teqnowebs.sqlite` on first visit.
+Unzip **directly into `public_html/`** so `public_html/index.php` exists.
+
+Do **not** upload a nested `public/` folder. That is what causes Hostinger **403**.
+
+1. Unzip zip contents into `public_html/`
+2. Confirm File Manager shows `public_html/index.php`
+3. Copy `config.local.example.php` → `config.local.php` (MySQL + app_url)
+4. `storage/` writable (755/775)
 
 ### Seed logins (password `teqnowebs123`)
 
 | Email | Access |
 |-------|--------|
-| `admin@teqnowebs.com` | Staff hub + `/admin` |
-| `staff@teqnowebs.com` | Staff hub |
+| `admin@teqnowebs.com` | `/admin` + `/staff` |
+| `staff@teqnowebs.com` | `/staff` |
 
-## Hostinger (MySQL)
-
-1. Upload the project so **document root** = `public/`
-2. Copy `config.local.example.php` → `config.local.php` (one level above `public/`)
-3. Set MySQL credentials + `app_url`
-4. Visit the site — tables + seed users are created automatically
-
-```php
-// config.local.php
-return [
-  'app_url' => 'https://teqnowebs.com',
-  'db_driver' => 'mysql',
-  'mysql' => [
-    'host' => 'localhost',
-    'port' => '3306',
-    'database' => 'YOUR_DB',
-    'username' => 'YOUR_USER',
-    'password' => 'YOUR_PASS',
-    'charset' => 'utf8mb4',
-  ],
-];
-```
-
-Make `storage/` writable by PHP.
-
-## Routes
-
-`/` · `/services` · `/software` · `/about` · `/contact` · `/blog` · `/login` · `/staff` · `/admin`
-
-## Staff tools (subdomains)
+## Staff tools
 
 - Attendance → `https://attendance.teqnowebs.com`
 - Ops → `https://ops.teqnowebs.com`

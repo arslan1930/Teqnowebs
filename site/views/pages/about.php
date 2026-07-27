@@ -40,7 +40,7 @@
                     }
                     $initials = mb_strtoupper(mb_substr($initials, 0, 2));
                   ?>
-                  <?php if (!empty($member['photo']) && is_file(dirname(__DIR__, 2) . '/public/' . ltrim($member['photo'], '/'))): ?>
+                  <?php if (!empty($member['photo']) && is_file(dirname(__DIR__, 2) . '/' . ltrim($member['photo'], '/'))): ?>
                     <img src="<?= e(url('/' . ltrim($member['photo'], '/'))) ?>" alt="<?= e($member['name']) ?>" style="width:100%;height:100%;object-fit:cover;">
                   <?php else: ?>
                     <?= e($initials) ?>
