@@ -1,31 +1,27 @@
-Teqnowebs plain PHP — fix 403 on Hostinger
-==========================================
+Teqnowebs plain PHP — Hostinger
+================================
 
-MOST COMMON 403 CAUSE:
-  You left files inside a nested /public folder.
-  Hostinger public_html/ then has no index.php → 403.
-
-CORRECT UPLOAD:
-  1. Empty (or backup) public_html/
+CORRECT UPLOAD (avoids 403):
+  1. Empty/backup public_html/
   2. Unzip so these sit DIRECTLY in public_html/:
        index.php
        .htaccess
-       assets/
-       app/
-       views/
-       config.php
-       storage/
-  3. public_html/index.php must exist (open File Manager and check).
-  4. Copy config.local.example.php → config.local.php
-     Set MySQL details + app_url = https://teqnowebs.com
-  5. storage/ folder permissions: 755 (or 775)
+       .env.example
+       assets/ app/ views/ config.php storage/ team/
+  3. Confirm public_html/index.php exists
+  4. Copy .env.example → .env and set MySQL + APP_URL
+  5. storage/ permissions 755 or 775
 
 WRONG (causes 403):
-  public_html/public/index.php   ← nested — do not do this
-  public_html/site/index.php
+  public_html/public/index.php
 
-Login: admin@teqnowebs.com / teqnowebs123
-Staff: /staff
-Admin: /admin
+Login (defaults in .env):
+  admin@teqnowebs.com / teqnowebs123
+  staff@teqnowebs.com / teqnowebs123
 
-Attendance / Ops stay on their subdomains (linked from /staff).
+Staff hub /staff links to:
+  Attendance → attendance.teqnowebs.com
+  Ops → ops.teqnowebs.com
+
+Attendance is a SEPARATE app — see deploy/teqnowebs-attendance.zip
+and the attendance/ folder in the full project zip.

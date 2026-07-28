@@ -3,7 +3,7 @@
     <div class="wrap">
       <p class="eyebrow">Staff hub</p>
       <h1 class="font-display" style="font-size:2.25rem;">Internal tools</h1>
-      <p class="muted">Signed in as <?= e($user['name']) ?>. These apps run on their own subdomains.</p>
+      <p class="muted">Signed in as <?= e($user['name']) ?>. Tool URLs come from <code>ATTENDANCE_URL</code> / <code>OPS_URL</code> in <code>.env</code>.</p>
       <div style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:.5rem;">
         <?php if ((int) $user['is_admin']): ?>
           <a class="btn-outline" href="<?= e(url('/admin/posts')) ?>">Site admin</a>

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/env.php';
+
 function app_config(): array
 {
     static $config;
@@ -22,10 +24,23 @@ function e(?string $value): string
 
 function url(string $path = '/'): string
 {
-    if ($path === '' || $path === '/') {
-        return '/';
+    // Prefer the configured app URL path (handles subdirectory deployments)
+    $config = app_config();
+    $appPath = parse_url($config['app_url'] ?? '', PHP_URL_PATH) ?: '';
+
+    // Fallback to script directory when app_url has no path
+    if ($appPath === '') {
+        $appPath = dirname($_SERVER['SCRIPT_NAME'] ?? '') ?: '';
     }
-    return '/' . ltrim($path, '/');
+    if ($appPath === '/' || $appPath === '\\') {
+        $appPath = '';
+    }
+
+    if ($path === '' || $path === '/') {
+        return $appPath === '' ? '/' : rtrim($appPath, '/') . '/';
+    }
+
+    return rtrim($appPath, '/') . '/' . ltrim($path, '/');
 }
 
 function redirect(string $path): never
@@ -91,10 +106,12 @@ function render(string $page, array $data = []): void
 function request_path(): string
 {
     $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-    // Strip subdirectory if app is not at domain root
+    // Strip configured app path or script directory if app is not at domain root
     $script = dirname($_SERVER['SCRIPT_NAME'] ?? '');
-    if ($script !== '/' && $script !== '\\' && str_starts_with($uri, $script)) {
-        $uri = substr($uri, strlen($script)) ?: '/';
+    $configPath = parse_url(app_config()['app_url'] ?? '', PHP_URL_PATH) ?: '';
+    $base = $configPath !== '' ? $configPath : $script;
+    if ($base !== '/' && $base !== '\\' && $base !== '' && str_starts_with($uri, $base)) {
+        $uri = substr($uri, strlen($base)) ?: '/';
     }
     return '/' . trim($uri, '/');
 }

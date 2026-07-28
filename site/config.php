@@ -3,42 +3,65 @@
 declare(strict_types=1);
 
 /**
- * Copy to config.local.php on the server and fill in MySQL details.
- * Defaults use SQLite in storage/ for local testing.
+ * App config — secrets and DB come from .env only (see .env.example).
+ * Optional config.local.php can still override for one-off server tweaks.
  */
-return [
-    'app_name' => 'Teqnowebs',
-    'app_url' => getenv('APP_URL') ?: 'http://127.0.0.1:8080',
-    'debug' => (bool) (getenv('APP_DEBUG') ?: false),
+load_env();
 
-    // sqlite | mysql
-    'db_driver' => getenv('DB_DRIVER') ?: 'sqlite',
+$phone = (string) env('CONTACT_PHONE', '+447445152374');
+
+return [
+    'app_name' => (string) env('APP_NAME', 'Teqnowebs'),
+    'app_url' => rtrim((string) env('APP_URL', 'http://localhost/teqnowebs'), '/'),
+    'debug' => env_bool('APP_DEBUG', false),
+
+    // mysql | sqlite — credentials ONLY from .env (no hardcoded fallbacks)
+    'db_driver' => (string) env('DB_DRIVER', 'mysql'),
     'sqlite_path' => __DIR__ . '/storage/teqnowebs.sqlite',
 
     'mysql' => [
-        'host' => getenv('DB_HOST') ?: '127.0.0.1',
-        'port' => getenv('DB_PORT') ?: '3306',
-        'database' => getenv('DB_DATABASE') ?: 'teqnowebs',
-        'username' => getenv('DB_USERNAME') ?: 'root',
-        'password' => getenv('DB_PASSWORD') ?: '',
+        'host' => env_required('DB_HOST'),
+        'port' => (string) env('DB_PORT', '3306'),
+        'database' => env_required('DB_DATABASE'),
+        'username' => env_required('DB_USERNAME'),
+        'password' => env_required('DB_PASSWORD', true),
         'charset' => 'utf8mb4',
     ],
 
+    'users' => [
+        'admin' => [
+            'name' => (string) env('ADMIN_NAME', 'Teqnowebs Admin'),
+            'email' => strtolower(env_required('ADMIN_EMAIL')),
+            'password' => env_required('ADMIN_PASSWORD'),
+        ],
+        'staff' => [
+            'name' => (string) env('STAFF_NAME', 'Teqnowebs Staff'),
+            'email' => strtolower(env_required('STAFF_EMAIL')),
+            'password' => env_required('STAFF_PASSWORD'),
+        ],
+    ],
+
     'contact' => [
-        'email' => 'Support@teqnowebs.com',
-        'phone' => '+447445152374',
-        'phone_href' => 'tel:+447445152374',
-        'address' => 'Office no.97, D Ground, Chenone Road, Faisalabad, Pakistan.',
-        'linkedin_href' => 'https://www.linkedin.com/company/teqnowebs-seo-agency/',
-        'linkedin_label' => 'linkedin.com/company/teqnowebs-seo-agency',
-        'reply_time' => 'Within 1 business day',
+        'email' => (string) env('CONTACT_EMAIL', 'Support@teqnowebs.com'),
+        'phone' => $phone,
+        'phone_href' => 'tel:' . preg_replace('/[^\d+]/', '', $phone),
+        'address' => (string) env(
+            'CONTACT_ADDRESS',
+            'Office no.97, D Ground, Chenone Road, Faisalabad, Pakistan.'
+        ),
+        'linkedin_href' => (string) env(
+            'CONTACT_LINKEDIN',
+            'https://www.linkedin.com/company/teqnowebs-seo-agency/'
+        ),
+        'linkedin_label' => (string) env(
+            'CONTACT_LINKEDIN_LABEL',
+            'linkedin.com/company/teqnowebs-seo-agency'
+        ),
+        'reply_time' => (string) env('CONTACT_REPLY_TIME', 'Within 1 business day'),
     ],
 
     'tools' => [
-        'attendance' => getenv('ATTENDANCE_URL') ?: 'https://attendance.teqnowebs.com',
-        'ops' => getenv('OPS_URL') ?: 'https://ops.teqnowebs.com',
+        'attendance' => (string) env('ATTENDANCE_URL', 'http://localhost/attendance'),
+        'ops' => (string) env('OPS_URL', 'http://localhost/ops'),
     ],
-
-    // Change after first login on production
-    'seed_password' => 'teqnowebs123',
 ];
