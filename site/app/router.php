@@ -58,13 +58,13 @@ function dispatch(): void
                             'name' => 'Attendance',
                             'url' => app_config()['tools']['attendance'],
                             'blurb' => 'Staff check-in / check-out, leave, holidays, and admin timings.',
-                            'note' => 'Office network for staff punches; admin login from anywhere.',
+                            'note' => 'Plain PHP + MySQL on Hostinger; checkout rules + half leave built in.',
                         ],
                         [
                             'name' => 'Ops / Link Desk',
                             'url' => app_config()['tools']['ops'],
                             'blurb' => 'Clients, link inventory, monthly P&L, and CSV import — replaces the Excel sheet.',
-                            'note' => 'Use the Node/SQLite deploy for a shared team database.',
+                            'note' => 'Plain PHP + MySQL on Hostinger (same stack as this site).',
                         ],
                     ],
                 ]);

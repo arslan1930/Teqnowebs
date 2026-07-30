@@ -1,0 +1,23 @@
+Teqnowebs Attendance — Hostinger (plain PHP + MySQL)
+=====================================================
+
+1. In Hostinger, create a MySQL database (e.g. teqnowebs_attendance).
+2. Upload this folder either:
+   - as public_html/attendance/  (subdirectory), OR
+   - as the document root of attendance.teqnowebs.com
+3. Copy .env.example → .env and set DB_* + APP_URL.
+   - Subdirectory example: APP_URL=https://teqnowebs.com/attendance
+   - Subdomain example:    APP_URL=https://attendance.teqnowebs.com
+4. Do NOT nest a /public folder under public_html.
+5. Open the URL — tables + seed users are created on first hit.
+
+Seed password for all demo accounts: attendance123
+  admin@teqnowebs.com  (admin — no punch)
+  staff@teqnowebs.com  (staff — female timings)
+  hr@teqnowebs.com     (staff — male timings)
+
+Rules:
+  - Checkout blocked before 3:00pm (Asia/Karachi)
+  - Checkout 3:00–3:59pm = half leave
+  - 1 personal leave / month
+  - Female / male office timings

@@ -49,7 +49,9 @@ All menu/admin links use `url()` + `APP_URL` (subdirectory-safe). Do not hardcod
 
 Set in `.env` (linked from `/staff`):
 
-| Env | Local | Production |
-|-----|-------|------------|
-| `ATTENDANCE_URL` | `http://localhost/attendance` | `https://attendance.teqnowebs.com` |
-| `OPS_URL` | `http://localhost/ops` | `https://ops.teqnowebs.com` |
+| Env | Example |
+|-----|---------|
+| `ATTENDANCE_URL` | `https://teqnowebs.com/attendance` or subdomain |
+| `OPS_URL` | `https://teqnowebs.com/ops` or subdomain |
+
+Deploy the PHP apps from `attendance-php/` and `ops-php/` (or `deploy/teqnowebs-*-php.zip`).
