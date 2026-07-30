@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 40" fill="none" role="img" aria-label="Teqnowebs">
+  <rect x="0" y="4" width="32" height="32" rx="8" fill="#2563eb"/>
+  <path d="M8 12h16v3.2h-5.7V28h-4.6V15.2H8V12z" fill="#fff"/>
+  <text
+    x="44"
+    y="28"
+    font-family="Bricolage Grotesque, Figtree, Avenir Next, Segoe UI, sans-serif"
+    font-size="22"
+    font-weight="700"
+    letter-spacing="-0.04em"
+  >
+    <tspan fill="#1e293b">Teqno</tspan><tspan fill="#2563eb">webs</tspan><tspan fill="#64748b">.</tspan>
+  </text>
+</svg>
