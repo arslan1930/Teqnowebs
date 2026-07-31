@@ -12,7 +12,9 @@ export default function HomePage() {
     (async () => {
       const profile = await getSessionProfile();
       if (!active) return;
-      router.replace(profile ? "/dashboard/" : "/login/");
+      if (!profile) router.replace("/login");
+      else if (profile.role === "admin") router.replace("/admin");
+      else router.replace("/dashboard");
     })();
     return () => {
       active = false;

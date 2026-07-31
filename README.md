@@ -1,69 +1,46 @@
-# Teqnowebs
+# Teqnowebs monorepo
 
-Agency website for Teqnowebs — web development, graphic design, SEO, link building, and custom business software (sales, invoicing, warehouse, order tracking).
+| App | Path | Hostinger deploy |
+|-----|------|------------------|
+| **Marketing site** | [`site/`](site/) | Plain PHP + MySQL → `public_html/` |
+| **Attendance** | [`attendance-php/`](attendance-php/) | Plain PHP + MySQL → `public_html/attendance/` |
+| **Ops / Link Desk** | [`ops-php/`](ops-php/) | Plain PHP + MySQL → `public_html/ops/` |
 
-## Run locally
+Legacy Next.js sources remain in [`attendance/`](attendance/) and [`ops/`](ops/) for reference. Prefer the PHP apps on Hostinger (no Node).
+
+## Zips in `deploy/`
+
+| File | Use |
+|------|-----|
+| [`teqnowebs-php.zip`](deploy/teqnowebs-php.zip) | Main site → unzip into `public_html/` |
+| [`teqnowebs-attendance-php.zip`](deploy/teqnowebs-attendance-php.zip) | Attendance PHP → `public_html/attendance/` or subdomain |
+| [`teqnowebs-ops-php.zip`](deploy/teqnowebs-ops-php.zip) | Ops PHP → `public_html/ops/` or subdomain |
+| [`teqnowebs-full.zip`](deploy/teqnowebs-full.zip) | Site + both PHP apps + deploy zips |
+
+Older Next/static zips may still be present; use the `*-php.zip` packages for Hostinger.
+
+## Quick start (local)
 
 ```bash
-export PATH="$(pwd)/.tools/node/bin:$PATH"
-npm install
-cp .env.example .env.local   # then set your Sanity project ID
-npm run build
-npx serve@latest out -l 3000
+# Site
+cd site && cp .env.example .env   # or use config.local.php
+php -S 127.0.0.1:8080 router.php
+
+# Attendance
+cd attendance-php && cp config.local.example.php config.local.php
+php -S 127.0.0.1:8081 router.php
+
+# Ops
+cd ops-php && cp config.local.example.php config.local.php
+php -S 127.0.0.1:8082 router.php
 ```
 
-Open http://127.0.0.1:3000/ (domain-root routes — no `/Teqnowebs` prefix).
+## Seed passwords
 
-Examples: `/contact/`, `/about/`, `/services/`, `/software/`, `/blog/`.
+| App | Password | Accounts |
+|-----|----------|----------|
+| Site | `teqnowebs123` | `admin@teqnowebs.com`, `staff@teqnowebs.com` |
+| Attendance | `attendance123` | `admin@…`, `staff@…`, `hr@…`, … |
+| Ops | `ops123` | `admin@…`, `linker@…`, `outreach@…` |
 
-## Pages
-
-| Route | Content |
-| --- | --- |
-| `/` | Brand-first home + service pillars + software spotlight |
-| `/services` | Websites, UI/UX, graphic design, SEO & link building |
-| `/software` | Sales manager/CRM, finance, invoicing, warehouse, order tracking |
-| `/blog` | Blog index (Sanity posts at build time) |
-| `/blog/[slug]` | Blog post |
-| `/about` | Agency story + team |
-| `/contact` | Quote form |
-
-## Scripts
-
-- `npm run dev` — development server
-- `npm run build` — production static export + sync to repo root
-- `npx serve out` — preview the static export (`npm start` is not used with `output: "export"`)
-- `npm run sanity` — local Sanity Studio
-- `npm run sanity:deploy` — host Studio on `*.sanity.studio`
-- `npm run attendance:dev` — staff attendance app (subdomain)
-- `npm run attendance:build` — build attendance static export (`attendance/out/`)
-
-## Attendance subdomain (`attendance.teqnowebs.com`)
-
-| | Main site | Attendance |
-| --- | --- | --- |
-| URL | `https://teqnowebs.com/` | `https://attendance.teqnowebs.com/` |
-| Folder | `public_html/` | `public_html/attendance/` |
-| Access | Worldwide | Office network only (IP allowlist) |
-
-Staff login + check-in/out app lives in [`attendance/`](attendance/).  
-Deploy into `public_html/attendance/` only. Set the office public IP in [`attendance/public/.htaccess`](attendance/public/.htaccess) (placeholder `REPLACE_WITH_OFFICE_PUBLIC_IP`) — see [`attendance/OFFICE_IP.md`](attendance/OFFICE_IP.md). Do **not** IP-lock the main site.
-
-## Blog & team (Sanity)
-
-Managed in **Sanity Studio**. After publish/edit, run `npm run build` and re-upload to Hostinger.
-
-Env vars: see `.env.example`.
-
-## Hostinger deploy (domain-root URLs)
-
-Goal: `https://mydomain.com/contact/`, `https://mydomain.com/about/`, etc.
-
-1. Run `npm run build`.
-2. Hostinger → Domains → your domain → **Document root** = `public_html`.
-3. Upload build files **directly into** `public_html/`:
-   - `index.html`, `contact/`, `about/`, `services/`, `software/`, `blog/`, `_next/`, `.htaccess`, favicons, `logo.svg`, `team/`
-4. **Delete** any old `public_html/Teqnowebs/` folder (that caused `/Teqnowebs/...` and client errors).
-5. `.htaccess` redirects `/Teqnowebs/...` → `/...` and `/Contact` → `/contact/`.
-
-Canonical routes are lowercase (`/contact/`). Capitalized URLs like `/Contact` redirect automatically.
+Staff hub on the marketing site (`/staff`) links to `ATTENDANCE_URL` / `OPS_URL` from `.env`.

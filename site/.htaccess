@@ -1,0 +1,29 @@
+# Hostinger: unzip ALL files into public_html/ (domain root).
+# public_html/index.php must exist — do NOT nest another /public folder.
+
+DirectoryIndex index.php index.html
+
+<IfModule mod_authz_core.c>
+  Require all granted
+</IfModule>
+
+Options -Indexes +FollowSymLinks
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Block direct web access to app internals + secrets
+  RewriteRule ^(app|views|storage|scripts|sql)/ - [F,L,NC]
+  RewriteRule ^config(\.local)?\.php$ - [F,L,NC]
+  RewriteRule ^\.env - [F,L,NC]
+
+  # Legacy Next path
+  RewriteRule ^Teqnowebs/?(.*)$ /$1 [R=301,L,NC]
+
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^ index.php [L]
+</IfModule>

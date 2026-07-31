@@ -1,0 +1,19 @@
+Teqnowebs Ops / Link Desk — Hostinger (plain PHP + MySQL)
+=========================================================
+
+1. Create a MySQL database (e.g. teqnowebs_ops).
+2. Upload this folder either:
+   - as public_html/ops/  (subdirectory), OR
+   - as the document root of ops.teqnowebs.com
+3. Copy .env.example → .env and set DB_* + APP_URL.
+   - Subdirectory: APP_URL=https://teqnowebs.com/ops
+   - Subdomain:    APP_URL=https://ops.teqnowebs.com
+4. Do NOT nest a /public folder under public_html.
+5. Open the URL — schema + seed data are created on first hit.
+
+Seed password: ops123
+  admin@teqnowebs.com
+  linker@teqnowebs.com
+  outreach@teqnowebs.com
+
+Features: clients, link tasks (queued→live), monthly P&L, expenses, CSV import, team.
