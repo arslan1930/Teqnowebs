@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
-import { getSessionProfile, hasSupabaseConfig, login } from "@/lib/attendance";
+import { getSessionProfile, login, useLocalDb } from "@/lib/attendance";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,8 +18,9 @@ export default function LoginPage() {
     (async () => {
       const profile = await getSessionProfile();
       if (!active) return;
-      if (profile) router.replace("/dashboard/");
-      else setChecking(false);
+      if (profile) {
+        router.replace(profile.role === "admin" ? "/admin/" : "/dashboard/");
+      } else setChecking(false);
     })();
     return () => {
       active = false;
@@ -31,8 +32,8 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await login(email, password);
-      router.replace("/dashboard/");
+      const profile = await login(email, password);
+      router.replace(profile.role === "admin" ? "/admin/" : "/dashboard/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -59,17 +60,18 @@ export default function LoginPage() {
           Staff attendance login
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
-          Sign in with your company profile to mark check-in and check-out.
+          Staff mark attendance. Admins manage the office — no attendance required for admin.
         </p>
 
-        {!hasSupabaseConfig ? (
-          <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            Demo mode — password <strong>attendance123</strong> for all:
+        {useLocalDb ? (
+          <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-950">
+            SQLite database is active on this server. Password{" "}
+            <strong>attendance123</strong> for all seeded accounts:
             <br />
-            Staff: <strong>staff@teqnowebs.com</strong> (female) ·{" "}
-            <strong>hr@teqnowebs.com</strong> (male)
+            Admin: <strong>admin@teqnowebs.com</strong> (no punches)
             <br />
-            Admin: <strong>admin@teqnowebs.com</strong>
+            Staff examples: <strong>staff@teqnowebs.com</strong>,{" "}
+            <strong>hr@teqnowebs.com</strong>, <strong>sara@teqnowebs.com</strong>
           </p>
         ) : null}
 

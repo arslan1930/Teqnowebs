@@ -1,23 +1,44 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
-import { buildTodayRoster, getSessionProfile, logout } from "@/lib/attendance";
-import { todayDateStr } from "@/lib/dates";
+import { StatusBadge } from "@/components/StatusBadge";
+import { employeeTheme } from "@/lib/employee-ui";
+import {
+  addStaffMember,
+  buildTodayRoster,
+  getSessionProfile,
+  hasSupabaseConfig,
+  logout,
+  resetStaffPassword,
+  upsertDayAttendance,
+} from "@/lib/attendance";
+import { daysAgo, endOfMonth, formatClock, monthKey, todayDateStr } from "@/lib/dates";
 import { listLeaves, reviewLeave } from "@/lib/leave";
 import {
+  attendanceCsv,
+  attendanceReport,
+  downloadCsv,
+  employeeStatsFor,
+} from "@/lib/reports";
+import {
   addHoliday,
+  getAppSettings,
+  htaccessSnippet,
   listHolidays,
   listStaffProfiles,
   listTimings,
   removeHoliday,
+  saveAppSettings,
   saveTiming,
   updateStaffProfile,
 } from "@/lib/settings";
 import type {
+  AppSettings,
   CompanyHoliday,
+  DayAttendanceRow,
+  EmployeePeriodStats,
   LeaveRequest,
   OfficeTiming,
   RosterRow,
@@ -25,7 +46,7 @@ import type {
   StaffProfile,
   StaffRole,
 } from "@/lib/types";
-import { GROUP_LABELS } from "@/lib/types";
+import { DEFAULT_TIMEZONE, GROUP_LABELS } from "@/lib/types";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -35,27 +56,82 @@ export default function AdminPage() {
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [staff, setStaff] = useState<StaffProfile[]>([]);
   const [roster, setRoster] = useState<RosterRow[]>([]);
+  const [report, setReport] = useState<DayAttendanceRow[]>([]);
+  const [settings, setSettings] = useState<AppSettings>({
+    timezone: DEFAULT_TIMEZONE,
+    allowedIps: [],
+  });
+  const [ipDraft, setIpDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [holDate, setHolDate] = useState(todayDateStr());
   const [holTitle, setHolTitle] = useState("");
   const [holNote, setHolNote] = useState("");
+  const [from, setFrom] = useState(daysAgo(13));
+  const [to, setTo] = useState(todayDateStr());
+  const [filterUser, setFilterUser] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("attendance123");
+  const [newGroup, setNewGroup] = useState<StaffGroup>("female");
+  const [editUserId, setEditUserId] = useState("");
+  const [editDate, setEditDate] = useState(todayDateStr());
+  const [editIn, setEditIn] = useState("09:00");
+  const [editOut, setEditOut] = useState("18:00");
+  const [editNote, setEditNote] = useState("");
+  const [clearOut, setClearOut] = useState(false);
+  const [statsMonth, setStatsMonth] = useState(monthKey(todayDateStr()));
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [selectedStats, setSelectedStats] = useState<EmployeePeriodStats | null>(null);
 
   const refresh = useCallback(async () => {
-    const [t, h, l, s, r] = await Promise.all([
+    const s = await getAppSettings();
+    setSettings(s);
+    setIpDraft(s.allowedIps.join("\n"));
+    const tz = s.timezone || DEFAULT_TIMEZONE;
+    const monthStart = `${statsMonth}-01`;
+    const monthEnd = endOfMonth(statsMonth);
+    const [t, h, l, st, r, rep] = await Promise.all([
       listTimings(),
       listHolidays(),
       listLeaves(),
       listStaffProfiles(),
       buildTodayRoster(),
+      attendanceReport({
+        from,
+        to,
+        userId: filterUser || undefined,
+      }),
     ]);
     setTimings(t);
     setHolidays(h);
     setLeaves(l);
-    setStaff(s);
+    setStaff(st);
     setRoster(r);
-  }, []);
+    setReport(rep);
+    setHolDate((d) => d || todayDateStr(tz));
+    if (selectedEmployeeId) {
+      const toDate = monthEnd < todayDateStr(tz) ? monthEnd : todayDateStr(tz);
+      const stats = await employeeStatsFor(selectedEmployeeId, monthStart, toDate);
+      setSelectedStats(stats);
+    }
+  }, [from, to, filterUser, selectedEmployeeId, statsMonth]);
+
+  async function onSelectEmployee(userId: string) {
+    setSelectedEmployeeId(userId);
+    setError(null);
+    try {
+      const tz = settings.timezone || DEFAULT_TIMEZONE;
+      const monthStart = `${statsMonth}-01`;
+      const monthEnd = endOfMonth(statsMonth);
+      const toDate = monthEnd < todayDateStr(tz) ? monthEnd : todayDateStr(tz);
+      const stats = await employeeStatsFor(userId, monthStart, toDate);
+      setSelectedStats(stats);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load employee stats");
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -140,6 +216,76 @@ export default function AdminPage() {
     }
   }
 
+  async function onSaveSettings() {
+    try {
+      const allowedIps = ipDraft
+        .split(/[\n,]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const next = await saveAppSettings({
+        timezone: settings.timezone || DEFAULT_TIMEZONE,
+        allowedIps,
+      });
+      setSettings(next);
+      setIpDraft(next.allowedIps.join("\n"));
+      flash("Settings saved — copy the .htaccess snippet onto Hostinger for IP lock");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save settings");
+    }
+  }
+
+  async function onExport() {
+    try {
+      const csv = await attendanceCsv({
+        from,
+        to,
+        userId: filterUser || undefined,
+      });
+      downloadCsv(`attendance-${from}-to-${to}.csv`, csv);
+      flash("CSV downloaded");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not export CSV");
+    }
+  }
+
+  async function onAddStaff() {
+    try {
+      await addStaffMember({
+        fullName: newName,
+        email: newEmail,
+        password: newPassword,
+        staffGroup: newGroup,
+      });
+      setNewName("");
+      setNewEmail("");
+      await refresh();
+      flash("Staff added (demo mode)");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not add staff");
+    }
+  }
+
+  async function onManualEdit() {
+    if (!profile || !editUserId) return;
+    try {
+      const checkInAt = editIn ? new Date(`${editDate}T${editIn}:00`).toISOString() : null;
+      const checkOutAt =
+        !clearOut && editOut ? new Date(`${editDate}T${editOut}:00`).toISOString() : null;
+      await upsertDayAttendance({
+        userId: editUserId,
+        date: editDate,
+        checkInAt,
+        checkOutAt,
+        adminNote: editNote,
+        editedBy: profile.id,
+      });
+      await refresh();
+      flash("Attendance day updated");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not edit attendance");
+    }
+  }
+
   if (loading || !profile) {
     return (
       <main className="grid min-h-screen place-items-center px-5">
@@ -149,29 +295,26 @@ export default function AdminPage() {
   }
 
   const pendingLeaves = leaves.filter((l) => l.status === "pending");
+  const present = roster.filter((r) => r.checkedIn && !r.onLeave && !r.isHoliday).length;
+  const late = roster.filter((r) => r.punchStatus === "late").length;
+  const absent = roster.filter(
+    (r) => !r.checkedIn && !r.onLeave && !r.isHoliday,
+  ).length;
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl px-5 py-8 sm:py-12">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <BrandMark size="sm" />
-        <div className="flex gap-2">
-          <Link
-            href="/dashboard/"
-            className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm"
-          >
-            Staff dashboard
-          </Link>
-          <button
-            type="button"
-            className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm"
-            onClick={async () => {
-              await logout();
-              router.replace("/login/");
-            }}
-          >
-            Sign out
-          </button>
-        </div>
+        <button
+          type="button"
+          className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm"
+          onClick={async () => {
+            await logout();
+            router.replace("/login/");
+          }}
+        >
+          Sign out
+        </button>
       </header>
 
       <h1
@@ -181,7 +324,8 @@ export default function AdminPage() {
         Admin panel
       </h1>
       <p className="mt-2 text-sm text-[var(--muted)]">
-        Manage female/male office hours, holidays, leave approvals, and today’s roster.
+        You manage the office — admins do not mark attendance. Staff check-out before 3:00pm is
+        blocked; 3:00–3:59pm = half leave. Data is stored in SQLite on this server.
       </p>
 
       {error ? (
@@ -194,6 +338,399 @@ export default function AdminPage() {
           {message}
         </p>
       ) : null}
+
+      <section className="panel mt-8 rounded-2xl p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-lg font-semibold">Employees — one click</h2>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              Tap a person to see leaves, late days, days present, and half leaves.
+            </p>
+          </div>
+          <label className="text-sm">
+            Month
+            <input
+              type="month"
+              value={statsMonth}
+              onChange={async (e) => {
+                setStatsMonth(e.target.value);
+                if (selectedEmployeeId) {
+                  // refresh will pick up new month via effect dependency
+                }
+              }}
+              className="mt-1 block rounded-lg border border-[var(--line)] px-3 py-2"
+            />
+          </label>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {staff
+            .filter((s) => s.active && s.role === "staff")
+            .map((s) => {
+              const theme = employeeTheme(s.id);
+              const selected = selectedEmployeeId === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => onSelectEmployee(s.id)}
+                  className="rounded-full border px-4 py-2 text-sm font-semibold transition"
+                  style={{
+                    background: selected ? theme.solid : theme.bg,
+                    borderColor: theme.border,
+                    color: selected ? "#fff" : theme.text,
+                    boxShadow: selected ? `0 8px 20px -12px ${theme.solid}` : undefined,
+                  }}
+                >
+                  {s.fullName}
+                </button>
+              );
+            })}
+        </div>
+        {selectedStats ? (
+          <div
+            className="mt-5 rounded-2xl border p-5"
+            style={{
+              background: employeeTheme(selectedStats.userId).bg,
+              borderColor: employeeTheme(selectedStats.userId).border,
+            }}
+          >
+            <h3
+              className="font-display text-xl font-semibold"
+              style={{ color: employeeTheme(selectedStats.userId).text }}
+            >
+              {selectedStats.userName}
+            </h3>
+            <p className="mt-1 text-xs" style={{ color: employeeTheme(selectedStats.userId).text }}>
+              {GROUP_LABELS[selectedStats.staffGroup]} · {statsMonth}
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-wide text-emerald-800">Days present</p>
+                <p className="mt-1 text-2xl font-semibold text-emerald-900">
+                  {selectedStats.daysPresent}
+                </p>
+              </div>
+              <div className="rounded-xl border border-orange-200 bg-orange-50 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-wide text-orange-800">Late coming</p>
+                <p className="mt-1 text-2xl font-semibold text-orange-900">
+                  {selectedStats.lateDays}
+                </p>
+              </div>
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-wide text-amber-800">Half leaves</p>
+                <p className="mt-1 text-2xl font-semibold text-amber-900">
+                  {selectedStats.halfLeaves}
+                </p>
+              </div>
+              <div className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-wide text-violet-800">
+                  Personal leaves
+                </p>
+                <p className="mt-1 text-2xl font-semibold text-violet-900">
+                  {selectedStats.personalLeaves}
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <StatusBadge status="absent" />
+              <span className="text-xs text-[var(--muted)] self-center">
+                {selectedStats.absentDays} absent · {selectedStats.missingCheckoutDays} missing
+                checkout
+              </span>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-[var(--muted)]">Select an employee above.</p>
+        )}
+      </section>
+
+      <section className="panel mt-8 rounded-2xl p-6">
+        <h2 className="font-display text-lg font-semibold">Today overview</h2>
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          {todayDateStr(settings.timezone)} · {settings.timezone}
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <p className="text-xs uppercase text-emerald-800">Present</p>
+            <p className="mt-1 text-2xl font-semibold text-emerald-900">{present}</p>
+          </div>
+          <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
+            <p className="text-xs uppercase text-orange-800">Late</p>
+            <p className="mt-1 text-2xl font-semibold text-orange-900">{late}</p>
+          </div>
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+            <p className="text-xs uppercase text-rose-800">Absent</p>
+            <p className="mt-1 text-2xl font-semibold text-rose-900">{absent}</p>
+          </div>
+        </div>
+        <ul className="mt-4 space-y-2">
+          {roster.map((row) => {
+            const theme = employeeTheme(row.profile.id);
+            const status: typeof row.punchStatus = row.isHoliday
+              ? "holiday"
+              : row.onLeave
+                ? "on_leave"
+                : row.checkedIn
+                  ? row.punchStatus
+                  : "absent";
+            return (
+              <li
+                key={row.profile.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border px-3 py-3 text-sm"
+                style={{ background: theme.bg, borderColor: theme.border }}
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className="grid h-9 w-9 place-items-center rounded-full text-xs font-bold text-white"
+                    style={{ background: theme.solid }}
+                  >
+                    {row.profile.fullName
+                      .split(" ")
+                      .map((p) => p[0])
+                      .slice(0, 2)
+                      .join("")}
+                  </span>
+                  <div>
+                    <p className="font-semibold" style={{ color: theme.text }}>
+                      {row.profile.fullName}
+                    </p>
+                    <p className="text-xs" style={{ color: theme.text, opacity: 0.8 }}>
+                      {GROUP_LABELS[row.profile.staffGroup]}
+                      {row.checkInAt
+                        ? ` · in ${formatClock(row.checkInAt, settings.timezone)}`
+                        : ""}
+                      {row.checkedOut ? " · out" : row.checkedIn ? " · still in" : ""}
+                    </p>
+                  </div>
+                </div>
+                <StatusBadge
+                  status={status}
+                  onLeave={row.onLeave}
+                  isHoliday={row.isHoliday}
+                  checkedIn={row.checkedIn}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section className="panel mt-8 rounded-2xl p-6">
+        <h2 className="font-display text-lg font-semibold">Attendance report</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-4">
+          <label className="text-sm">
+            From
+            <input
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-[var(--line)] px-3 py-2"
+            />
+          </label>
+          <label className="text-sm">
+            To
+            <input
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-[var(--line)] px-3 py-2"
+            />
+          </label>
+          <label className="text-sm sm:col-span-2">
+            Person
+            <select
+              value={filterUser}
+              onChange={(e) => setFilterUser(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-[var(--line)] px-3 py-2"
+            >
+              <option value="">All staff</option>
+              {staff.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.fullName}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="cta rounded-lg px-4 py-2 text-sm font-semibold"
+            onClick={() => refresh().then(() => flash("Report refreshed"))}
+          >
+            Refresh report
+          </button>
+          <button
+            type="button"
+            className="rounded-lg border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold"
+            onClick={onExport}
+          >
+            Export CSV
+          </button>
+        </div>
+        <div className="mt-4 max-h-80 overflow-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-[var(--line)] text-[var(--muted)]">
+                <th className="py-2 pr-3">Date</th>
+                <th className="py-2 pr-3">Name</th>
+                <th className="py-2 pr-3">In</th>
+                <th className="py-2 pr-3">Out</th>
+                <th className="py-2">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.slice(0, 200).map((row) => (
+                <tr
+                  key={`${row.userId}-${row.date}`}
+                  className="border-b border-[var(--line)]/70"
+                >
+                  <td className="py-2 pr-3">{row.date}</td>
+                  <td className="py-2 pr-3">{row.userName}</td>
+                  <td className="py-2 pr-3">
+                    {row.checkInAt ? formatClock(row.checkInAt, settings.timezone) : "—"}
+                  </td>
+                  <td className="py-2 pr-3">
+                    {row.checkOutAt ? formatClock(row.checkOutAt, settings.timezone) : "—"}
+                  </td>
+                  <td className="py-2 capitalize">
+                    {row.status.replaceAll("_", " ")}
+                    {row.isManual ? " · edited" : ""}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="panel mt-8 rounded-2xl p-6">
+        <h2 className="font-display text-lg font-semibold">Manual edit (fix punch)</h2>
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Overwrites that person&apos;s punches for the selected date and stores an admin note.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label className="text-sm">
+            Staff
+            <select
+              value={editUserId}
+              onChange={(e) => setEditUserId(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-[var(--line)] px-3 py-2"
+            >
+              <option value="">Select…</option>
+              {staff
+                .filter((s) => s.role === "staff")
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.fullName}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label className="text-sm">
+            Date
+            <input
+              type="date"
+              value={editDate}
+              onChange={(e) => setEditDate(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-[var(--line)] px-3 py-2"
+            />
+          </label>
+          <label className="text-sm">
+            Check-in time
+            <input
+              type="time"
+              value={editIn}
+              onChange={(e) => setEditIn(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-[var(--line)] px-3 py-2"
+            />
+          </label>
+          <label className="text-sm">
+            Check-out time
+            <input
+              type="time"
+              value={editOut}
+              onChange={(e) => setEditOut(e.target.value)}
+              disabled={clearOut}
+              className="mt-1 w-full rounded-lg border border-[var(--line)] px-3 py-2 disabled:opacity-50"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={clearOut}
+              onChange={(e) => setClearOut(e.target.checked)}
+            />
+            Leave checkout empty (missing checkout)
+          </label>
+          <label className="text-sm sm:col-span-2">
+            Admin note
+            <input
+              value={editNote}
+              onChange={(e) => setEditNote(e.target.value)}
+              placeholder="Reason for correction"
+              className="mt-1 w-full rounded-lg border border-[var(--line)] px-3 py-2"
+            />
+          </label>
+        </div>
+        <button
+          type="button"
+          className="cta mt-3 rounded-lg px-4 py-2 text-sm font-semibold"
+          onClick={onManualEdit}
+        >
+          Save correction
+        </button>
+      </section>
+
+      <section className="panel mt-8 rounded-2xl p-6">
+        <h2 className="font-display text-lg font-semibold">Settings</h2>
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Recommended: host on an <strong>office PC</strong> so staff use LAN (
+          <code>192.168.x.x</code>). Router public-IP changes after reboot then do not matter.
+          <code>.htaccess</code> already allows LAN for staff and <code>/admin</code> +{" "}
+          <code>/login</code> from anywhere. See <code>ARCHITECTURE.md</code>.
+        </p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <label className="text-sm">
+            Office timezone
+            <input
+              value={settings.timezone}
+              onChange={(e) => setSettings((s) => ({ ...s, timezone: e.target.value }))}
+              className="mt-1 w-full rounded-lg border border-[var(--line)] px-3 py-2"
+              placeholder="Asia/Karachi"
+            />
+          </label>
+          <label className="text-sm">
+            Extra public IPs (optional backup)
+            <textarea
+              value={ipDraft}
+              onChange={(e) => setIpDraft(e.target.value)}
+              rows={3}
+              placeholder={"Only if not using office LAN hosting"}
+              className="mt-1 w-full rounded-lg border border-[var(--line)] px-3 py-2 font-mono text-xs"
+            />
+          </label>
+        </div>
+        <p className="mt-3 text-xs text-[var(--muted)]">
+          Optional public-IP snippet (LAN ranges are already in the shipped{" "}
+          <code>.htaccess</code>):
+        </p>
+        <pre className="mt-2 overflow-x-auto rounded-lg border border-[var(--line)] bg-slate-950 p-3 text-xs text-slate-100">
+          {htaccessSnippet(
+            ipDraft
+              .split(/[\n,]+/)
+              .map((s) => s.trim())
+              .filter(Boolean),
+          )}
+        </pre>
+        <button
+          type="button"
+          className="cta mt-3 rounded-lg px-4 py-2 text-sm font-semibold"
+          onClick={onSaveSettings}
+        >
+          Save settings
+        </button>
+      </section>
 
       <section className="panel mt-8 rounded-2xl p-6">
         <h2 className="font-display text-lg font-semibold">Office timings</h2>
@@ -371,10 +908,49 @@ export default function AdminPage() {
       </section>
 
       <section className="panel mt-8 rounded-2xl p-6">
-        <h2 className="font-display text-lg font-semibold">Staff directory</h2>
-        <p className="mt-1 text-xs text-[var(--muted)]">
-          Create Auth users in Supabase first, then set role and group here.
-        </p>
+        <h2 className="font-display text-lg font-semibold">Staff directory (≈15 seats)</h2>
+        {!hasSupabaseConfig ? (
+          <div className="mt-4 grid gap-3 rounded-xl border border-[var(--line)] bg-white p-4 sm:grid-cols-2">
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Full name"
+              className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm"
+            />
+            <input
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="Email"
+              className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm"
+            />
+            <input
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Password"
+              className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm"
+            />
+            <select
+              value={newGroup}
+              onChange={(e) => setNewGroup(e.target.value as StaffGroup)}
+              className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm"
+            >
+              <option value="female">Female staff</option>
+              <option value="male">Male staff</option>
+            </select>
+            <button
+              type="button"
+              className="cta rounded-lg px-4 py-2 text-sm font-semibold sm:col-span-2"
+              onClick={onAddStaff}
+            >
+              Add staff (demo)
+            </button>
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-[var(--muted)]">
+            Create Auth users in Supabase first, then set role/group/active here. Password resets
+            use Supabase Auth (service role not available on static Hostinger).
+          </p>
+        )}
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
@@ -382,7 +958,8 @@ export default function AdminPage() {
                 <th className="py-2 pr-3">Name</th>
                 <th className="py-2 pr-3">Group</th>
                 <th className="py-2 pr-3">Role</th>
-                <th className="py-2">Active</th>
+                <th className="py-2 pr-3">Active</th>
+                <th className="py-2">Password</th>
               </tr>
             </thead>
             <tbody>
@@ -416,47 +993,36 @@ export default function AdminPage() {
                       <option value="admin">Admin</option>
                     </select>
                   </td>
-                  <td className="py-2">
+                  <td className="py-2 pr-3">
                     <input
                       type="checkbox"
                       checked={s.active}
                       onChange={(e) => onStaffPatch(s.id, { active: e.target.checked })}
                     />
                   </td>
+                  <td className="py-2">
+                    <button
+                      type="button"
+                      className="text-xs text-[var(--accent-deep)]"
+                      onClick={async () => {
+                        const pw = window.prompt(`New password for ${s.fullName}`);
+                        if (!pw) return;
+                        try {
+                          await resetStaffPassword(s.id, pw);
+                          flash("Password updated (demo)");
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : "Reset failed");
+                        }
+                      }}
+                    >
+                      Reset
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </section>
-
-      <section className="panel mt-8 rounded-2xl p-6">
-        <h2 className="font-display text-lg font-semibold">Today overview</h2>
-        <p className="mt-1 text-xs text-[var(--muted)]">{todayDateStr()}</p>
-        <ul className="mt-4 space-y-2">
-          {roster.map((row) => (
-            <li
-              key={row.profile.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm"
-            >
-              <span>
-                <strong>{row.profile.fullName}</strong>{" "}
-                <span className="text-[var(--muted)]">
-                  ({GROUP_LABELS[row.profile.staffGroup]})
-                </span>
-              </span>
-              <span className="capitalize text-[var(--muted)]">
-                {row.isHoliday
-                  ? "Holiday"
-                  : row.onLeave
-                    ? "On leave"
-                    : row.checkedIn
-                      ? `${row.punchStatus.replace("_", " ")}${row.checkedOut ? " · out" : ""}`
-                      : "Absent"}
-              </span>
-            </li>
-          ))}
-        </ul>
       </section>
     </main>
   );

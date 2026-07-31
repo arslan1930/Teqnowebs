@@ -1,5 +1,6 @@
-import { monthKey, todayDateStr } from "./dates";
+import { monthKey, partsInTz, todayDateStr } from "./dates";
 import type {
+  AppSettings,
   AttendanceEvent,
   AttendanceEventType,
   CompanyHoliday,
@@ -9,6 +10,7 @@ import type {
   StaffProfile,
   StaffRole,
 } from "./types";
+import { DEFAULT_TIMEZONE } from "./types";
 
 const PROFILE_KEY = "teqnowebs.attendance.profile";
 const EVENTS_KEY = "teqnowebs.attendance.events";
@@ -16,6 +18,8 @@ const TIMINGS_KEY = "teqnowebs.attendance.timings";
 const HOLIDAYS_KEY = "teqnowebs.attendance.holidays";
 const LEAVES_KEY = "teqnowebs.attendance.leaves";
 const PROFILES_KEY = "teqnowebs.attendance.profiles";
+const SETTINGS_KEY = "teqnowebs.attendance.settings";
+const PASSWORDS_KEY = "teqnowebs.attendance.passwords";
 
 type DemoUser = StaffProfile & { password: string };
 
@@ -54,6 +58,11 @@ const DEFAULT_TIMINGS: OfficeTiming[] = [
   { staffGroup: "male", startTime: "09:00", endTime: "18:00", lateAfterMinutes: 15 },
 ];
 
+const DEFAULT_SETTINGS: AppSettings = {
+  timezone: DEFAULT_TIMEZONE,
+  allowedIps: [],
+};
+
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
@@ -76,11 +85,29 @@ function ensureProfilesSeeded() {
   return seeded;
 }
 
+function ensurePasswordsSeeded() {
+  const existing = readJson<Record<string, string>>(PASSWORDS_KEY, {});
+  if (Object.keys(existing).length) return existing;
+  const map: Record<string, string> = {};
+  for (const u of DEMO_USERS) map[u.id] = u.password;
+  writeJson(PASSWORDS_KEY, map);
+  return map;
+}
+
 function ensureTimingsSeeded() {
   const existing = readJson<OfficeTiming[]>(TIMINGS_KEY, []);
   if (existing.length) return existing;
   writeJson(TIMINGS_KEY, DEFAULT_TIMINGS);
   return DEFAULT_TIMINGS;
+}
+
+export function demoGetSettings(): AppSettings {
+  return { ...DEFAULT_SETTINGS, ...readJson<AppSettings>(SETTINGS_KEY, DEFAULT_SETTINGS) };
+}
+
+export function demoSaveSettings(settings: AppSettings): AppSettings {
+  writeJson(SETTINGS_KEY, settings);
+  return settings;
 }
 
 export function demoGetProfile(): StaffProfile | null {
@@ -91,23 +118,16 @@ export function demoGetProfile(): StaffProfile | null {
 export function demoLogin(email: string, password: string): StaffProfile {
   ensureProfilesSeeded();
   ensureTimingsSeeded();
-  const user = DEMO_USERS.find(
-    (u) => u.email.toLowerCase() === email.trim().toLowerCase() && u.password === password,
-  );
-  if (!user) {
+  ensurePasswordsSeeded();
+  const profiles = ensureProfilesSeeded();
+  const passwords = ensurePasswordsSeeded();
+  const profile = profiles.find((p) => p.email.toLowerCase() === email.trim().toLowerCase());
+  if (!profile || passwords[profile.id] !== password) {
     throw new Error(
       "Invalid email or password. Try staff@teqnowebs.com or admin@teqnowebs.com / attendance123",
     );
   }
-  const profiles = ensureProfilesSeeded();
-  const profile = profiles.find((p) => p.id === user.id) || {
-    id: user.id,
-    email: user.email,
-    fullName: user.fullName,
-    role: user.role,
-    staffGroup: user.staffGroup,
-    active: true,
-  };
+  if (!profile.active) throw new Error("This account is deactivated. Contact admin.");
   writeJson(PROFILE_KEY, profile);
   return profile;
 }
@@ -126,18 +146,79 @@ export function demoMark(
   userId: string,
   type: AttendanceEventType,
   note?: string,
+  clientIp?: string | null,
 ): AttendanceEvent {
+  const settings = demoGetSettings();
+  const tz = settings.timezone || DEFAULT_TIMEZONE;
+  const today = todayDateStr(tz);
+  const events = readJson<AttendanceEvent[]>(EVENTS_KEY, []);
+  const todays = events.filter(
+    (e) => e.userId === userId && partsInTz(new Date(e.createdAt), tz).dateStr === today,
+  );
+  if (type === "check_in" && todays.some((e) => e.type === "check_in")) {
+    throw new Error("Already checked in today.");
+  }
+  if (type === "check_out") {
+    if (!todays.some((e) => e.type === "check_in")) {
+      throw new Error("Check in first before checking out.");
+    }
+    if (todays.some((e) => e.type === "check_out")) {
+      throw new Error("Already checked out today.");
+    }
+  }
   const event: AttendanceEvent = {
     id: `evt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     userId,
     type,
     createdAt: new Date().toISOString(),
     note: note || null,
+    clientIp: clientIp || null,
+    isManual: false,
   };
-  const events = readJson<AttendanceEvent[]>(EVENTS_KEY, []);
   events.push(event);
   writeJson(EVENTS_KEY, events);
   return event;
+}
+
+export function demoUpsertDayAttendance(input: {
+  userId: string;
+  date: string;
+  checkInAt: string | null;
+  checkOutAt: string | null;
+  adminNote?: string;
+  editedBy: string;
+}): void {
+  const settings = demoGetSettings();
+  const tz = settings.timezone || DEFAULT_TIMEZONE;
+  const events = readJson<AttendanceEvent[]>(EVENTS_KEY, []);
+  const kept = events.filter(
+    (e) =>
+      !(e.userId === input.userId && partsInTz(new Date(e.createdAt), tz).dateStr === input.date),
+  );
+  const note = input.adminNote?.trim() || "Manual admin edit";
+  if (input.checkInAt) {
+    kept.push({
+      id: `evt-manual-in-${Date.now()}`,
+      userId: input.userId,
+      type: "check_in",
+      createdAt: input.checkInAt,
+      note,
+      isManual: true,
+      editedBy: input.editedBy,
+    });
+  }
+  if (input.checkOutAt) {
+    kept.push({
+      id: `evt-manual-out-${Date.now()}`,
+      userId: input.userId,
+      type: "check_out",
+      createdAt: input.checkOutAt,
+      note,
+      isManual: true,
+      editedBy: input.editedBy,
+    });
+  }
+  writeJson(EVENTS_KEY, kept);
 }
 
 export function demoListTimings(): OfficeTiming[] {
@@ -275,8 +356,49 @@ export function demoUpdateProfile(
   return updated;
 }
 
-export function demoApprovedLeavesThisMonth(userId: string, ref = todayDateStr()): number {
+export function demoAddStaff(input: {
+  fullName: string;
+  email: string;
+  password: string;
+  staffGroup: StaffGroup;
+  role?: StaffRole;
+}): StaffProfile {
+  const profiles = ensureProfilesSeeded();
+  if (profiles.some((p) => p.email.toLowerCase() === input.email.trim().toLowerCase())) {
+    throw new Error("A staff member with that email already exists");
+  }
+  if (profiles.length >= 16) {
+    throw new Error("Seat limit reached (15 staff + admin demo seats)");
+  }
+  const profile: StaffProfile = {
+    id: `demo-${Date.now()}`,
+    email: input.email.trim().toLowerCase(),
+    fullName: input.fullName.trim(),
+    role: input.role || "staff",
+    staffGroup: input.staffGroup,
+    active: true,
+  };
+  profiles.push(profile);
+  writeJson(PROFILES_KEY, profiles);
+  const passwords = ensurePasswordsSeeded();
+  passwords[profile.id] = input.password;
+  writeJson(PASSWORDS_KEY, passwords);
+  return profile;
+}
+
+export function demoResetPassword(userId: string, password: string): void {
+  const passwords = ensurePasswordsSeeded();
+  if (!ensureProfilesSeeded().some((p) => p.id === userId)) {
+    throw new Error("Profile not found");
+  }
+  passwords[userId] = password;
+  writeJson(PASSWORDS_KEY, passwords);
+}
+
+export function demoApprovedLeavesThisMonth(userId: string, ref?: string): number {
+  const settings = demoGetSettings();
+  const dateRef = ref || todayDateStr(settings.timezone);
   return demoListLeaves(userId).filter(
-    (l) => l.status === "approved" && monthKey(l.date) === monthKey(ref),
+    (l) => l.status === "approved" && monthKey(l.date) === monthKey(dateRef),
   ).length;
 }
