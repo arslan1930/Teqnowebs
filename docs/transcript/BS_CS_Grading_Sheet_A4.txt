@@ -1,0 +1,44 @@
+GRADING SHEET FOR TRANSCRIPT
+(BS Computer Science — Grade Key)
+
+ABBREVIATION
+CH    Credit Hours
+GP    Grade Point per Credit
+GPA   Grade Point Average
+CGPA  Cumulative Grade Point Average
+XF    Course Passed in Probation exam with Grade X
+XR    Course Repeated with Improved Grade X
+
+GRADES AND GRADE POINTS
+Students are awarded grades according to level of performance as indicated below.
+
+Grade | Marks Obtained     | Grade Points per Credit | Remarks
+A+    | 90% and Above      | 4.00                    | Outstanding
+A     | 80% – 89.99%       | 4.00                    | Excellent
+B+    | 75% – 79.99%       | 3.50 – 3.99             | Very Good
+B     | 70% – 74.99%       | 3.00 – 3.49             | Good
+C+    | 65% – 69.99%       | 2.50 – 2.99             | Fair
+C     | 60% – 64.99%       | 2.00 – 2.49             | Fair
+D+    | 55% – 59.99%       | 1.50 – 1.99             | Pass (Probation)
+D     | 50% – 54.99%       | 1.00 – 1.49             | Pass (Probation)
+F     | Below 50%          | 0.00                    | Fail
+
+Ready Reckoner For Determination of Grade Points
+
+% AGE          Grade Point     % AGE             Grade Point
+50.00–50.99    1.00–1.09       66.00–66.99       2.60–2.69
+51.00–51.99    1.10–1.19       67.00–67.99       2.70–2.79
+52.00–52.99    1.20–1.29       68.00–68.99       2.80–2.89
+53.00–53.99    1.30–1.39       69.00–69.99       2.90–2.99
+54.00–54.99    1.40–1.49       70.00–70.99       3.00–3.09
+55.00–55.99    1.50–1.59       71.00–71.99       3.10–3.19
+56.00–56.99    1.60–1.69       72.00–72.99       3.20–3.29
+57.00–57.99    1.70–1.79       73.00–73.99       3.30–3.39
+58.00–58.99    1.80–1.89       74.00–74.99       3.40–3.49
+59.00–59.99    1.90–1.99       75.00–75.99       3.50–3.59
+60.00–60.99    2.00–2.09       76.00–76.99       3.60–3.69
+61.00–61.99    2.10–2.19       77.00–77.99       3.70–3.79
+62.00–62.99    2.20–2.29       78.00–78.99       3.80–3.89
+63.00–63.99    2.30–2.39       79.00–79.99       3.90–3.99
+64.00–64.99    2.40–2.49       80.0 and above    4.00
+65.00–65.99    2.50–2.59
