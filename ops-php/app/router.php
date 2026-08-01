@@ -59,6 +59,10 @@ function dispatch(): void
         ops_team();
         return;
     }
+    if ($method === 'GET' && $path === 'inventory') {
+        ops_inventory();
+        return;
+    }
 
     if ($method === 'POST') {
         match ($path) {
@@ -70,11 +74,15 @@ function dispatch(): void
             'import' => ops_import_post(),
             'team/save' => ops_team_save(),
             'team/update' => ops_team_update(),
+            'inventory/filter' => ops_inventory_filter(),
+            'inventory/add' => ops_inventory_add(),
+            'inventory/admin-add' => ops_inventory_admin_add(),
             default => null,
         };
         if (in_array($path, [
             'clients/save', 'tasks/save', 'tasks/delete', 'expenses/save',
             'expenses/delete', 'import', 'team/save', 'team/update',
+            'inventory/filter', 'inventory/add', 'inventory/admin-add',
         ], true)) {
             return;
         }
@@ -322,6 +330,97 @@ function ops_import_post(): void
         flash('error', $e->getMessage());
     }
     redirect('/import');
+}
+
+function ops_inventory(): void
+{
+    $user = require_login();
+    $results = $_SESSION['inventory_results'] ?? [];
+    $newRaw = (string) ($_SESSION['inventory_new_raw'] ?? '');
+    $filterMeta = $_SESSION['inventory_filter_meta'] ?? null;
+    render('inventory', [
+        'title' => 'Site inventory',
+        'user' => $user,
+        'old_sites' => list_inventory_site_names(),
+        'new_raw' => $newRaw,
+        'results' => is_array($results) ? $results : [],
+        'filter_meta' => is_array($filterMeta) ? $filterMeta : null,
+    ]);
+}
+
+function ops_inventory_filter(): void
+{
+    verify_csrf();
+    require_login();
+    $raw = (string) ($_POST['new_sites'] ?? '');
+    $parsed = parse_site_list($raw);
+    if (!$parsed) {
+        flash('error', 'Paste at least one site name or URL in the new sites box.');
+        $_SESSION['inventory_new_raw'] = $raw;
+        $_SESSION['inventory_results'] = [];
+        unset($_SESSION['inventory_filter_meta']);
+        redirect('/inventory');
+    }
+    $filtered = filter_new_sites_against_inventory($parsed);
+    $_SESSION['inventory_new_raw'] = $raw;
+    $_SESSION['inventory_results'] = $filtered['results'];
+    $_SESSION['inventory_filter_meta'] = [
+        'input_count' => $filtered['input_count'],
+        'excluded' => $filtered['excluded'],
+        'result_count' => count($filtered['results']),
+    ];
+    if (!$filtered['results']) {
+        flash('ok', 'All pasted sites already exist in old inventory (' . $filtered['excluded'] . ' excluded).');
+    } else {
+        flash(
+            'ok',
+            'Filtered: ' . count($filtered['results']) . ' new site(s). Excluded '
+            . $filtered['excluded'] . ' already in inventory.'
+        );
+    }
+    redirect('/inventory');
+}
+
+function ops_inventory_add(): void
+{
+    verify_csrf();
+    $user = require_login();
+    $results = $_SESSION['inventory_results'] ?? [];
+    if (!is_array($results) || !$results) {
+        // Fallback: accept posted list
+        $results = parse_site_list((string) ($_POST['results'] ?? ''));
+    }
+    if (!$results) {
+        flash('error', 'No filtered results to add. Run Filter sites first.');
+        redirect('/inventory');
+    }
+    $out = add_sites_to_inventory($results, (string) ($user['id'] ?? null));
+    unset($_SESSION['inventory_results'], $_SESSION['inventory_filter_meta'], $_SESSION['inventory_new_raw']);
+    flash(
+        'ok',
+        'Added ' . $out['added'] . ' site(s) to old inventory'
+        . ($out['skipped'] ? ' (' . $out['skipped'] . ' already present)' : '') . '.'
+    );
+    redirect('/inventory');
+}
+
+function ops_inventory_admin_add(): void
+{
+    verify_csrf();
+    $user = require_admin();
+    $raw = (string) ($_POST['admin_sites'] ?? '');
+    $parsed = parse_site_list($raw);
+    if (!$parsed) {
+        flash('error', 'Enter at least one site to add to inventory.');
+        redirect('/inventory');
+    }
+    $out = add_sites_to_inventory($parsed, (string) ($user['id'] ?? null));
+    flash(
+        'ok',
+        'Admin added ' . $out['added'] . ' site(s)'
+        . ($out['skipped'] ? ' (' . $out['skipped'] . ' duplicates skipped)' : '') . '.'
+    );
+    redirect('/inventory');
 }
 
 function ops_team(): void

@@ -105,3 +105,28 @@ th { color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-s
 .small { font-size: .8rem; }
 form.inline { display: inline; }
 .scroll { overflow-x: auto; }
+
+.inventory-grid {
+  display: grid;
+  gap: 1rem;
+}
+@media (min-width: 900px) {
+  .inventory-grid { grid-template-columns: 1fr 1fr; }
+}
+.inventory-box textarea,
+.inventory-list {
+  width: 100%;
+  min-height: 12rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .8rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+.inventory-list[readonly] {
+  background: #f8fafc;
+  color: var(--ink-soft);
+}
+button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}

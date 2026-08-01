@@ -8,6 +8,7 @@ require __DIR__ . '/env.php';
 load_env();
 
 require __DIR__ . '/helpers.php';
+require __DIR__ . '/inventory.php';
 require __DIR__ . '/db.php';
 require __DIR__ . '/auth.php';
 require __DIR__ . '/import.php';

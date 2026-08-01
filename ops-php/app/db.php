@@ -103,7 +103,17 @@ function migrate_ops(PDO $pdo): void
         currency VARCHAR(20) NOT NULL
     )");
 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS site_inventory (
+        id VARCHAR(64) PRIMARY KEY,
+        site_name VARCHAR(255) NOT NULL UNIQUE,
+        created_at VARCHAR(40) NOT NULL,
+        created_by VARCHAR(64)
+    )");
+
     seed_ops($pdo);
+    if (function_exists('ensure_inventory_seeded')) {
+        ensure_inventory_seeded($pdo);
+    }
 }
 
 function seed_ops(PDO $pdo): void
@@ -172,6 +182,18 @@ function seed_ops(PDO $pdo): void
         $now,
         $now,
     ]);
+
+    // Seed old site inventory (hostnames only)
+    $inv = $pdo->prepare(
+        'INSERT INTO site_inventory (id, site_name, created_at, created_by) VALUES (?, ?, ?, ?)'
+    );
+    foreach (['example-blog.com', 'guestpost-network.com', 'outreach-sites.example'] as $site) {
+        try {
+            $inv->execute([new_id('site'), $site, $now, 'admin-1']);
+        } catch (Throwable) {
+            // ignore
+        }
+    }
 }
 
 /** @return list<string> */

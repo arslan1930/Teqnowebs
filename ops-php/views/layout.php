@@ -29,6 +29,7 @@ $user = $user ?? current_user();
               'home' => 'Home',
               'clients' => 'Clients',
               'tasks' => 'Tasks',
+              'inventory' => 'Inventory',
               'pnl' => 'P&L',
               'import' => 'Import',
           ];
