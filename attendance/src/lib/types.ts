@@ -2,7 +2,15 @@ export type AttendanceEventType = "check_in" | "check_out";
 export type StaffRole = "admin" | "staff";
 export type StaffGroup = "female" | "male";
 export type LeaveStatus = "pending" | "approved" | "rejected";
-export type PunchStatus = "on_time" | "late" | "holiday" | "on_leave" | "none";
+export type PunchStatus =
+  | "on_time"
+  | "late"
+  | "half_leave"
+  | "holiday"
+  | "on_leave"
+  | "missing_checkout"
+  | "absent"
+  | "none";
 
 export type StaffProfile = {
   id: string;
@@ -19,6 +27,9 @@ export type AttendanceEvent = {
   type: AttendanceEventType;
   createdAt: string;
   note?: string | null;
+  clientIp?: string | null;
+  isManual?: boolean;
+  editedBy?: string | null;
 };
 
 export type DayStatus = {
@@ -26,6 +37,7 @@ export type DayStatus = {
   checkedOut: boolean;
   lastEvent: AttendanceEvent | null;
   punchStatus: PunchStatus;
+  message: string;
 };
 
 export type OfficeTiming = {
@@ -62,7 +74,42 @@ export type RosterRow = {
   isHoliday: boolean;
 };
 
+export type AppSettings = {
+  timezone: string;
+  allowedIps: string[];
+};
+
+export type DayAttendanceRow = {
+  date: string;
+  userId: string;
+  userName: string;
+  staffGroup: StaffGroup;
+  checkInAt: string | null;
+  checkOutAt: string | null;
+  checkInIp: string | null;
+  checkOutIp: string | null;
+  status: PunchStatus;
+  note: string | null;
+  isManual: boolean;
+  halfLeave: boolean;
+  wasLate: boolean;
+};
+
+export type EmployeePeriodStats = {
+  userId: string;
+  userName: string;
+  staffGroup: StaffGroup;
+  daysPresent: number;
+  lateDays: number;
+  halfLeaves: number;
+  personalLeaves: number;
+  absentDays: number;
+  missingCheckoutDays: number;
+};
+
 export const GROUP_LABELS: Record<StaffGroup, string> = {
   female: "Female staff",
   male: "Male staff",
 };
+
+export const DEFAULT_TIMEZONE = "Asia/Karachi";

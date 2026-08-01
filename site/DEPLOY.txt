@@ -1,0 +1,27 @@
+Teqnowebs plain PHP — Hostinger
+================================
+
+CORRECT UPLOAD (avoids 403):
+  1. Empty/backup public_html/
+  2. Unzip so these sit DIRECTLY in public_html/:
+       index.php
+       .htaccess
+       .env.example
+       assets/ app/ views/ config.php storage/ team/
+  3. Confirm public_html/index.php exists
+  4. Copy .env.example → .env and set MySQL + APP_URL
+  5. storage/ permissions 755 or 775
+
+WRONG (causes 403):
+  public_html/public/index.php
+
+Login (defaults in .env):
+  admin@teqnowebs.com / teqnowebs123
+  staff@teqnowebs.com / teqnowebs123
+
+Staff hub /staff links to:
+  Attendance → attendance.teqnowebs.com
+  Ops → ops.teqnowebs.com
+
+Attendance is a SEPARATE app — see deploy/teqnowebs-attendance.zip
+and the attendance/ folder in the full project zip.
