@@ -6,23 +6,18 @@
 /** @var array|null $filter_meta */
 $isAdmin = ($user['role'] ?? '') === 'admin';
 ?>
-<div class="panel inventory-hero">
+<div class="panel">
   <h1>Site inventory filter</h1>
-  <p class="muted" style="margin:0;max-width:42rem;">
-    Compare new outreach sites against the admin inventory. Filter removes duplicates, then add only fresh hostnames back into the old list.
+  <p class="muted">
+    Box 1 shows the old inventory from the admin database (site names only, no https).
+    Paste new sites in Box 2, filter out duplicates, then add the remaining sites back into inventory.
   </p>
 </div>
 
 <div class="inventory-grid">
-  <div class="panel inventory-box inventory-box-old">
-    <div class="inventory-head">
-      <h2>Old inventory</h2>
-      <span class="step-pill">Box 1 · Admin DB</span>
-    </div>
-    <p class="muted small" style="margin:.25rem 0 .75rem;">
-      Hostnames only (no https) ·
-      <span class="count-chip" style="color:var(--old);"><?= count($old_sites) ?> sites</span>
-    </p>
+  <div class="panel inventory-box">
+    <h2>1. Old inventory</h2>
+    <p class="muted small">From admin database · <?= count($old_sites) ?> site(s) · hostnames only</p>
     <textarea class="inventory-list" readonly rows="16" aria-label="Old inventory sites"><?= e(implode("\n", $old_sites)) ?></textarea>
     <?php if ($isAdmin): ?>
       <form method="post" action="<?= e(url('/inventory/admin-add')) ?>" style="margin-top:1rem;">
@@ -36,14 +31,9 @@ $isAdmin = ($user['role'] ?? '') === 'admin';
     <?php endif; ?>
   </div>
 
-  <div class="panel inventory-box inventory-box-new">
-    <div class="inventory-head">
-      <h2>New sites</h2>
-      <span class="step-pill">Box 2 · Paste list</span>
-    </div>
-    <p class="muted small" style="margin:.25rem 0 .75rem;">
-      Paste URLs or hostnames — <code>https://</code> is stripped on filter
-    </p>
+  <div class="panel inventory-box">
+    <h2>2. New sites</h2>
+    <p class="muted small">Paste sites for filtration (URLs or hostnames — https:// is stripped)</p>
     <form method="post" action="<?= e(url('/inventory/filter')) ?>">
       <?= csrf_field() ?>
       <textarea name="new_sites" rows="16" placeholder="https://new-site.com&#10;another-new.org&#10;www.brand-new.net/post"><?= e($new_raw) ?></textarea>
@@ -54,18 +44,14 @@ $isAdmin = ($user['role'] ?? '') === 'admin';
   </div>
 </div>
 
-<div class="panel inventory-box inventory-box-result">
-  <div class="inventory-head">
-    <h2>Filter results</h2>
-    <span class="step-pill">Box 3 · New only</span>
-  </div>
-
+<div class="panel inventory-box">
+  <h2>3. Filter results</h2>
   <?php if ($filter_meta): ?>
-    <div class="meta-row">
-      <span class="meta-chip">Input <strong><?= (int) $filter_meta['input_count'] ?></strong></span>
-      <span class="meta-chip">Excluded <strong><?= (int) $filter_meta['excluded'] ?></strong></span>
-      <span class="meta-chip">New to add <strong><?= (int) $filter_meta['result_count'] ?></strong></span>
-    </div>
+    <p class="muted small">
+      Input: <?= (int) $filter_meta['input_count'] ?> ·
+      Excluded (already in old inventory): <?= (int) $filter_meta['excluded'] ?> ·
+      New: <?= (int) $filter_meta['result_count'] ?>
+    </p>
   <?php else: ?>
     <p class="muted small">Run <strong>Filter sites</strong> to compare Box 2 against Box 1.</p>
   <?php endif; ?>
@@ -78,7 +64,7 @@ $isAdmin = ($user['role'] ?? '') === 'admin';
     <div class="actions">
       <button class="cta" type="submit" <?= $results ? '' : 'disabled' ?>>Add sites to old inventory</button>
       <?php if ($results): ?>
-        <span class="count-chip" style="color:var(--result);"><?= count($results) ?> will go to Box 1</span>
+        <span class="muted small"><?= count($results) ?> site(s) will be added to Box 1</span>
       <?php endif; ?>
     </div>
   </form>
